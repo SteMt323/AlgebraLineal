@@ -109,3 +109,75 @@ class VectorOperateSerializer(serializers.Serializer):
             same_len("v", "w")
 
         return {**data, "vectors": vecs, "scalars": sc}
+
+
+class MatrixOperateSerializer(serializers.Serializer):
+    operation = serializers.ChoiceField(choices=['add', 'sub', 'scalar', 'transpose', 'matmul', 'sum_many', 'sub_many', 'matmul_chain', 'inverse'])
+
+    # operandos comunes
+    A = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()), required=False)
+    B = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()), required=False)
+    matrices = serializers.ListField(child=serializers.ListField(child=serializers.ListField(child=serializers.FloatField())), required=False)
+    scalar = serializers.FloatField(required=False)
+    options = serializers.DictField(required=False)
+
+    def validate(self, data):
+        op = data.get('operation')
+        A = data.get('A')
+        B = data.get('B')
+        mats = data.get('matrices')
+        sc = data.get('scalar')
+
+        def is_matrix(M):
+            return isinstance(M, list) and all(isinstance(row, list) for row in M)
+
+        if op in ('add', 'sub'):
+            if A is None or B is None:
+                raise serializers.ValidationError("Para 'add'/'sub' envía 'A' y 'B'.")
+            if not is_matrix(A) or not is_matrix(B):
+                raise serializers.ValidationError("A y B deben ser matrices (listas de listas).")
+            if len(A) == 0 or len(A[0]) == 0:
+                raise serializers.ValidationError("Matrices no pueden ser vacías.")
+            if any(len(row) != len(A[0]) for row in A) or any(len(row) != len(B[0]) for row in B):
+                raise serializers.ValidationError("Todas las filas de A y B deben tener la misma longitud interna.")
+            if len(A) != len(B) or len(A[0]) != len(B[0]):
+                raise serializers.ValidationError("A y B deben tener la misma dimensión.")
+
+        if op == 'scalar':
+            if A is None or sc is None:
+                raise serializers.ValidationError("Para 'scalar' envía 'A' y 'scalar'.")
+
+        if op == 'transpose':
+            if A is None:
+                raise serializers.ValidationError("Para 'transpose' envía 'A'.")
+
+        if op == 'matmul':
+            if A is None or B is None:
+                raise serializers.ValidationError("Para 'matmul' envía 'A' y 'B'.")
+            if len(A) == 0 or len(A[0]) == 0 or len(B) == 0 or len(B[0]) == 0:
+                raise serializers.ValidationError("Matrices no pueden ser vacías.")
+            if len(A[0]) != len(B):
+                raise serializers.ValidationError(f"Incompatibilidad dimensional para multiplicación: cols(A)={len(A[0])} != rows(B)={len(B)}")
+
+        if op in ('sum_many', 'sub_many'):
+            if not mats or not isinstance(mats, list) or len(mats) < 2:
+                raise serializers.ValidationError("'matrices' debe ser una lista de al menos 2 matrices para sumar/restar en cadena.")
+            first = mats[0]
+            if any(len(row) != len(first[0]) for m in mats for row in m):
+                raise serializers.ValidationError("Todas las matrices en 'matrices' deben tener las mismas dimensiones.")
+
+        if op == 'matmul_chain':
+            if not mats or not isinstance(mats, list) or len(mats) < 2:
+                raise serializers.ValidationError("'matrices' debe ser una lista de al menos 2 matrices para multiplicación en cadena.")
+            # comprobar compatibilidad encadenada
+            for i in range(len(mats) - 1):
+                if len(mats[i][0]) != len(mats[i+1]):
+                    raise serializers.ValidationError(f"Incompatibilidad en la cadena en posición {i} -> {i+1}: cols(M{i}) != rows(M{i+1}).")
+
+        if op == 'inverse':
+            if A is None:
+                raise serializers.ValidationError("Para 'inverse' envía 'A'.")
+            if len(A) != len(A[0]):
+                raise serializers.ValidationError("La matriz debe ser cuadrada para calcular la inversa.")
+
+        return data
