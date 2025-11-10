@@ -10,6 +10,8 @@ from .serializers import (
     VectorOperateSerializer,
     MatrixOperateSerializer,
 )
+from .serializers import MatrixDeterminantSerializer
+from .algorithms.matrix.determinants.determinant_api import determinant_api
 
 from .algorithms.reduce.gauss_jordan import gauss_jordan_api
 from .algorithms.reduce.gauss import gauss_api
@@ -100,3 +102,18 @@ class MatrixOperateView(APIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": {"code": "MATRIX_OP_ERROR", "message": str(e)}}, status=status.HTTP_400_BAD_REQUEST)
+
+class MatrixDeterminantView(APIView):
+    def post(self, request):
+        s = MatrixDeterminantSerializer(data=request.data)
+        if not s.is_valid():
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": str(s.errors)}}, status=status.HTTP_400_BAD_REQUEST)
+        payload = s.validated_data
+        try:
+            res = determinant_api(A=payload["A"], method=payload.get("method"), options=payload.get("options"))
+            # determinant_api returns dict or raises
+            if isinstance(res, dict) and res.get('error'):
+                return Response(res, status=status.HTTP_400_BAD_REQUEST)
+            return Response(res, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": {"code": "DETERMINANT_ERROR", "message": str(e)}}, status=status.HTTP_400_BAD_REQUEST)
