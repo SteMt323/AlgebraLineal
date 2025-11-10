@@ -8,7 +8,7 @@ from ..utils import(
 )
 
 from ..parametric import parametric_from_rref
-from algebra.Constants.SubDigits import SUBDIGITS
+from algebra.Constants.subDigits import SUBDIGITS
 
 # -------------------------------
 # API de Gauss-Jordan

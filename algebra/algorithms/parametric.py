@@ -6,7 +6,7 @@ from .utils import (
 )
 
 from .utils import format_number
-from ..Constants.SubDigits import SUBDIGITS
+from ..Constants.subDigits import SUBDIGITS
 
 def xsub(i: int) ->str:
     s = str(i)
