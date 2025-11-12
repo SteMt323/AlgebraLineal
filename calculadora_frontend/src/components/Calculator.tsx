@@ -11,34 +11,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import parseCellInput from '../utils/parseInput';
 import { matrixOperate, matrixDeterminant, matrixReduce, vectorOperate, vectorCombination } from '../api/client';
 import ResultPretty from './Output/ResultPretty';
+import MatricesSection from './calculator_components/MatricesSection';
+import SystemEquationSection from './calculator_components/SystemEquationSection';
+import DeterminantSection from './calculator_components/DeterminantSection';
+import VectorsSection from './calculator_components/VectorsSection';
+import ResultSection from './calculator_components/ResultSection';
 
-  // Map frontend operation ids to backend expected operation strings
-  function mapMatrixOperation(opId: string) {
-    const m: Record<string, string> = {
-      // single-pair operations removed: use many-versions only
-      scalar_mult: 'scalar',
-      //scalar: 'scalar',
-      transpose: 'transpose',
-      inverse: 'inverse',
-      sum_many: 'sum_many',
-      sub_many: 'sub_many',
-      matmul_chain: 'matmul_chain',
-    };
-    return m[opId] || opId;
-  }
+    // Map frontend operation ids to backend expected operation strings
+    function mapMatrixOperation(opId: string) {
+        const m: Record<string, string> = {
+            // single-pair operations removed: use many-versions only
+            scalar_mult: 'scalar',
+            //scalar: 'scalar',
+            transpose: 'transpose',
+            inverse: 'inverse',
+            sum_many: 'sum_many',
+            sub_many: 'sub_many',
+            matmul_chain: 'matmul_chain',
+        };
+        return m[opId] || opId;
+    }
 
-  function mapVectorOperation(opId: string) {
-    const m: Record<string, string | null> = {
-      add_vectores: 'add',
-      sub_vectorers: 'sub',
-      dot: 'dot',
-      scalar_vect: 'escalar',
-      comb2: 'comb2',
-      comb3: 'comb3',
-      // 'linear_combination' handled separately
-    };
-    return m[opId] ?? null;
-  }
+    function mapVectorOperation(opId: string) {
+      const m: Record<string, string | null> = {
+        add_vectores: 'add',
+        sub_vectorers: 'sub',
+        dot: 'dot',
+        scalar_vect: 'escalar',
+        comb2: 'comb2',
+        comb3: 'comb3',
+        // 'linear_combination' handled separately
+      };
+      return m[opId] ?? null;
+    }
 
 interface CalculatorProps {
   onBack: () => void;
@@ -282,6 +287,228 @@ export function Calculator({ onBack }: CalculatorProps) {
   const [vectorErrorsA, setVectorErrorsA] = useState<Record<string, string>>({});
   const [vectorErrorsB, setVectorErrorsB] = useState<Record<string, string>>({});
 
+  // calculate handler (extracted from previous inline onClick)
+  const handleCalculate = async () => {
+    setSubmitError(null);
+    setLoading(true);
+    try {
+      const parseMatrix = (m: MatrixValue) => {
+        const A: number[][] = [];
+        const errors: Record<string, string> = {};
+        m.forEach((row, i) => {
+          const r: number[] = [];
+          row.forEach((cell, j) => {
+            const parsed = parseCellInput(String(cell));
+            const key = `${i}-${j}`;
+            if (!parsed.valid) {
+              errors[key] = parsed.error || 'Invalid';
+              r.push(NaN);
+            } else r.push(parsed.value ?? NaN);
+          });
+          A.push(r);
+        });
+        return { A, errors };
+      };
+
+      const parseVector = (v: VectorValue) => {
+        const out: number[] = [];
+        const errors: Record<string, string> = {};
+        v.forEach((cell, i) => {
+          const parsed = parseCellInput(String(cell));
+          const key = String(i);
+          if (!parsed.valid) {
+            errors[key] = parsed.error || 'Invalid';
+            out.push(NaN);
+          } else out.push(parsed.value ?? NaN);
+        });
+        return { out, errors };
+      };
+
+      if (inputMode === 'matrix') {
+        if (operation === 'determinant') {
+          const { A, errors } = parseMatrix(matrixA);
+          if (Object.keys(errors).length) {
+            setMatrixErrorsA(errors);
+            setSubmitError('Hay entradas inválidas en la matriz A.');
+            setLoading(false);
+            return;
+          }
+          const res = await matrixDeterminant({ method: 'cofactors', A });
+          localStorage.setItem('calc_last_result', JSON.stringify(res));
+          setLastResult(res);
+          window.dispatchEvent(new Event('calc:updated'));
+          setLoading(false);
+          return;
+        }
+
+        if (manyOps.includes(operation)) {
+          const matricesParsed: number[][][] = [];
+          const allErrors: Record<string, string>[] = [];
+          let anyErr = false;
+          manyMatrices.forEach((m, mi) => {
+            const parsedRes = parseMatrix(m);
+            matricesParsed.push(parsedRes.A);
+            allErrors.push(parsedRes.errors);
+            if (Object.keys(parsedRes.errors).length) anyErr = true;
+          });
+          if (anyErr) {
+            setManyMatricesErrors(allErrors);
+            setSubmitError('Hay entradas inválidas en una o más matrices.');
+            setLoading(false);
+            return;
+          }
+          const payload: any = { operation: mapMatrixOperation(operation), matrices: matricesParsed };
+          const res = await matrixOperate(payload);
+          localStorage.setItem('calc_last_result', JSON.stringify(res));
+          setLastResult(res);
+          window.dispatchEvent(new Event('calc:updated'));
+          setLoading(false);
+          return;
+        }
+
+        const { A, errors: errA } = parseMatrix(matrixA);
+        let payload: any = { operation: mapMatrixOperation(operation) };
+        if (Object.keys(errA).length) {
+          setMatrixErrorsA(errA);
+          setSubmitError('Hay entradas inválidas en la matriz A.');
+          setLoading(false);
+          return;
+        }
+        payload.A = A;
+
+        if (operation === 'scalar_mult') {
+          const parsedScalar = parseCellInput(scalarInput);
+          if (!parsedScalar.valid) {
+            setScalarError(parsedScalar.error || 'Invalid scalar');
+            setSubmitError('Escalar inválido');
+            setLoading(false);
+            return;
+          }
+          payload.scalar = parsedScalar.value ?? 0;
+        }
+
+        if (needsTwoInputs) {
+          const { A: B, errors: errB } = parseMatrix(matrixB);
+          if (Object.keys(errB).length) {
+            setMatrixErrorsB(errB);
+            setSubmitError('Hay entradas inválidas en la matriz B.');
+            setLoading(false);
+            return;
+          }
+          payload.B = B;
+        }
+
+        const res = await matrixOperate(payload);
+        localStorage.setItem('calc_last_result', JSON.stringify(res));
+        setLastResult(res);
+        window.dispatchEvent(new Event('calc:updated'));
+        setLoading(false);
+        return;
+      }
+
+      if (inputMode === 'determinant') {
+        const { A, errors } = parseMatrix(matrixA);
+        if (Object.keys(errors).length) {
+          setMatrixErrorsA(errors);
+          setSubmitError('Hay entradas inválidas en la matriz A.');
+          setLoading(false);
+          return;
+        }
+        const res = await matrixDeterminant({ method: operation || 'cofactors', A });
+        localStorage.setItem('calc_last_result', JSON.stringify(res));
+        setLastResult(res);
+        window.dispatchEvent(new Event('calc:updated'));
+        setLoading(false);
+        return;
+      }
+
+      if (inputMode === 'reduce') {
+        const { A, errors: errA } = parseMatrix(matrixA);
+        const { out: b, errors: errb } = parseVector(vectorB);
+        if (Object.keys(errA).length) {
+          setMatrixErrorsA(errA);
+          setSubmitError('Hay entradas inválidas en la matriz A.');
+          setLoading(false);
+          return;
+        }
+        if (Object.keys(errb).length) {
+          setVectorErrorsB(errb);
+          setSubmitError('Hay entradas inválidas en el vector B.');
+          setLoading(false);
+          return;
+        }
+        const res = await matrixReduce({ method: operation === 'gauss_jordan' ? 'gauss-jordan' : 'gauss', A, b });
+        localStorage.setItem('calc_last_result', JSON.stringify(res));
+        setLastResult(res);
+        window.dispatchEvent(new Event('calc:updated'));
+        setLoading(false);
+        return;
+      }
+
+      if (inputMode === 'vector') {
+        if (operation === 'linear_combination') {
+          const { A, errors: errA } = parseMatrix(matrixA);
+          const { out: b, errors: errb } = parseVector(vectorB);
+          if (Object.keys(errA).length) {
+            setMatrixErrorsA(errA);
+            setSubmitError('Hay entradas inválidas en la matriz A.');
+            setLoading(false);
+            return;
+          }
+          if (Object.keys(errb).length) {
+            setVectorErrorsB(errb);
+            setSubmitError('Hay entradas inválidas en el vector B.');
+            setLoading(false);
+            return;
+          }
+          const res = await vectorCombination({ A, b });
+          localStorage.setItem('calc_last_result', JSON.stringify(res));
+          setLastResult(res);
+          window.dispatchEvent(new Event('calc:updated'));
+          setLoading(false);
+          return;
+        }
+
+        const { out: u, errors: errU } = parseVector(vectorA);
+        const { out: v, errors: errV } = parseVector(vectorB);
+        if (Object.keys(errU).length) {
+          setVectorErrorsA(errU);
+          setSubmitError('Hay entradas inválidas en el vector A.');
+          setLoading(false);
+          return;
+        }
+        if (needsTwoInputs && Object.keys(errV).length) {
+          setVectorErrorsB(errV);
+          setSubmitError('Hay entradas inválidas en el vector B.');
+          setLoading(false);
+          return;
+        }
+
+        const vecs: Record<string, number[]> = {};
+        vecs['u'] = u;
+        if (needsTwoInputs) vecs['v'] = v;
+
+        const op = mapVectorOperation(operation);
+        if (!op) {
+          setSubmitError('Operación de vectores no soportada por el backend.');
+          setLoading(false);
+          return;
+        }
+
+        const res = await vectorOperate({ operation: op, vectors: vecs });
+        localStorage.setItem('calc_last_result', JSON.stringify(res));
+        setLastResult(res);
+        window.dispatchEvent(new Event('calc:updated'));
+        setLoading(false);
+        return;
+      }
+    } catch (e: any) {
+      console.error(e);
+      setSubmitError(e?.message || 'Error en la petición');
+      setLoading(false);
+    }
+  };
+
   // Matrix operations mapped to backend implementations in algebra/algorithms/matrix/matrix_operations.py
   const matrixOperations = [
     { id: 'sum_many', label: 'A + B + ..', icon: Plus, description: 'Suma de varias matrices' },
@@ -341,6 +568,131 @@ export function Calculator({ onBack }: CalculatorProps) {
   } else {
     needsTwoInputs = !selectedOperation?.single;
   }
+
+  // Render the appropriate inputs inside AnimatePresence to avoid complex nested ternaries in JSX
+  const renderInputs = () => {
+    if (inputMode === 'matrix') {
+      return (
+        <motion.div
+          key="matrix-inputs"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <MatricesSection
+            operation={operation}
+            manyOps={manyOps}
+            manyMatrices={manyMatrices}
+            manyCount={manyCount}
+            matrixA={matrixA}
+            matrixB={matrixB}
+            dimensionsA={dimensionsA}
+            dimensionsB={dimensionsB}
+            selectedMatrixCell={selectedMatrixCell}
+            selectedVectorCell={selectedVectorCell}
+            selectedScalar={selectedScalar}
+            matrixErrorsA={matrixErrorsA}
+            matrixErrorsB={matrixErrorsB}
+            manyMatricesErrors={manyMatricesErrors}
+            setSelectedMatrixCell={setSelectedMatrixCell}
+            setSelectedVectorCell={setSelectedVectorCell}
+            setSelectedScalar={setSelectedScalar}
+            handleMatrixCellChange={handleMatrixCellChange}
+            handleManyMatrixCellChange={handleManyMatrixCellChange}
+            onDimensionsAChange={(r,c) => { setDimensionsA({ rows: r, cols: c }); const newMatrix = Array(r).fill(0).map(() => Array(c).fill(0)); setMatrixA(newMatrix); setMatrixErrorsA({}); setSelectedMatrixCell(null); }}
+            onDimensionsBChange={(r,c) => { setDimensionsB({ rows: r, cols: c }); const newMatrix = Array(r).fill(0).map(() => Array(c).fill(0)); setMatrixB(newMatrix); setMatrixErrorsB({}); setSelectedMatrixCell(null); }}
+            onManyDimensionsChange={(idx,r,c) => setManyMatrices((prev) => { const copy = prev.map((m) => m.map((r) => [...r])); const newM = Array(r).fill(0).map(() => Array(c).fill(0)); copy[idx] = newM; return copy; })}
+            scalarInput={scalarInput}
+            setScalarInput={setScalarInput}
+            setScalarError={setScalarError}
+            setManyCount={handleManyCountChange}
+          />
+        </motion.div>
+      );
+    }
+
+    if (inputMode === 'vector') {
+      return (
+        <motion.div
+          key="vector-inputs"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <VectorsSection
+            vectorA={vectorA}
+            vectorB={vectorB}
+            dimensionVectorA={dimensionVectorA}
+            dimensionVectorB={dimensionVectorB}
+            selectedVectorCell={selectedVectorCell}
+            setSelectedVectorCell={setSelectedVectorCell}
+            setSelectedMatrixCell={setSelectedMatrixCell}
+            setSelectedScalar={setSelectedScalar}
+            handleVectorCellChange={handleVectorCellChange}
+            vectorErrorsA={vectorErrorsA}
+            vectorErrorsB={vectorErrorsB}
+            onDimensionVectorAChange={(d) => { setDimensionVectorA(d); const newVector = Array(d).fill(0); setVectorA(newVector); setVectorErrorsA({}); setSelectedVectorCell(null); }}
+            onDimensionVectorBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
+            needsTwoInputs={needsTwoInputs}
+          />
+        </motion.div>
+      );
+    }
+
+    if (inputMode === 'reduce') {
+      return (
+        <motion.div
+          key="reduce-inputs"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          <SystemEquationSection
+            matrixA={matrixA}
+            dimensionsA={dimensionsA}
+            vectorB={vectorB}
+            dimensionVectorB={dimensionVectorB}
+            selectedMatrixCell={selectedMatrixCell}
+            selectedVectorCell={selectedVectorCell}
+            selectedScalar={selectedScalar}
+            matrixErrorsA={matrixErrorsA}
+            vectorErrorsB={vectorErrorsB}
+            setSelectedMatrixCell={setSelectedMatrixCell}
+            setSelectedVectorCell={setSelectedVectorCell}
+            setSelectedScalar={setSelectedScalar}
+            handleMatrixCellChange={handleMatrixCellChange}
+            handleVectorCellChange={handleVectorCellChange}
+            onDimensionsAChange={(r,c) => { setDimensionsA({ rows: r, cols: c }); const newMatrix = Array(r).fill(0).map(() => Array(c).fill(0)); setMatrixA(newMatrix); setMatrixErrorsA({}); setSelectedMatrixCell(null); }}
+            onDimensionBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
+          />
+        </motion.div>
+      );
+    }
+
+    // determinant
+    return (
+      <motion.div
+        key="determinant-inputs"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className="grid grid-cols-1 md:grid-cols-1 gap-6"
+      >
+        <DeterminantSection
+          matrixA={matrixA}
+          dimensionsA={dimensionsA}
+          selectedMatrixCell={selectedMatrixCell}
+          matrixErrorsA={matrixErrorsA}
+          setSelectedMatrixCell={setSelectedMatrixCell}
+          handleMatrixCellChange={handleMatrixCellChange}
+          onDimensionsAChange={(r,c) => { setDimensionsA({ rows: r, cols: c }); const newMatrix = Array(r).fill(0).map(() => Array(c).fill(0)); setMatrixA(newMatrix); setSelectedMatrixCell(null); }}
+        />
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden p-4 md:p-8">
@@ -483,292 +835,7 @@ export function Calculator({ onBack }: CalculatorProps) {
             />
 
             {/* Inputs */}
-            <AnimatePresence mode="wait">
-              {inputMode === 'matrix' ? (
-                <motion.div
-                  key="matrix-inputs"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                >
-                  {operation === 'scalar_mult' ? (
-                    <div className="col-span-2 space-y-4">
-                      <MatrixInput
-                        label="Matriz A"
-                        matrix={matrixA}
-                        dimensions={dimensionsA}
-                        isSelected={selectedMatrixCell?.matrix === 'A'}
-                        selectedCell={selectedMatrixCell?.matrix === 'A' ? { row: selectedMatrixCell.row, col: selectedMatrixCell.col } : null}
-                        onSelectMatrix={() => {}}
-                        onSelectCell={(row, col) => {
-                          setSelectedMatrixCell({ matrix: 'A', row, col });
-                          setSelectedVectorCell(null);
-                          setSelectedScalar(false);
-                        }}
-                        onCellChange={(r, c, v) => handleMatrixCellChange('A', r, c, v)}
-                        errors={matrixErrorsA}
-                        onDimensionsChange={(rows, cols) => {
-                          setDimensionsA({ rows, cols });
-                          const newMatrix = Array(rows)
-                            .fill(0)
-                            .map(() => Array(cols).fill(0));
-                          setMatrixA(newMatrix);
-                          setMatrixErrorsA({});
-                          setSelectedMatrixCell(null);
-                        }}
-                      />
-
-                      <EscalarInput
-                        value={scalarInput}
-                        onChange={(v) => { setScalarInput(v); setScalarError(null); }}
-                        onSelect={() => { setSelectedScalar(true); setSelectedMatrixCell(null); setSelectedVectorCell(null); }}
-                        onBlur={() => setSelectedScalar(false)}
-                        isSelected={selectedScalar}
-                        label="Escalar k"
-                      />
-                    </div>
-                  ) : manyOps.includes(operation) ? (
-                    <div className="col-span-2 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <label className="text-sm text-purple-200">Número de matrices:</label>
-                        <input
-                          type="number"
-                          min={2}
-                          max={6}
-                          value={manyCount}
-                          onChange={(e) => handleManyCountChange(Number(e.target.value || 2))}
-                          className="bg-white/5 border border-white/10 rounded px-2 py-1 w-20"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {manyMatrices.map((M, idx) => (
-                          <MatrixInput
-                            key={`many-${idx}`}
-                            label={`Matriz ${idx + 1}`}
-                            matrix={M}
-                            dimensions={{ rows: M.length, cols: M[0]?.length ?? 0 }}
-                            isSelected={false}
-                            selectedCell={null}
-                            onSelectMatrix={() => {}}
-                            onSelectCell={(row, col) => {
-                              // avoid mapping many-matrices cell selection to A/B; clear global selections
-                              setSelectedMatrixCell(null);
-                              setSelectedVectorCell(null);
-                            }}
-                            onCellChange={(r, c, v) => handleManyMatrixCellChange(idx, r, c, v)}
-                            errors={manyMatricesErrors[idx] || {}}
-                            onDimensionsChange={(rows, cols) => {
-                              setManyMatrices((prev) => {
-                                const copy = prev.map((m) => m.map((r) => [...r]));
-                                const newM = Array(rows).fill(0).map(() => Array(cols).fill(0));
-                                copy[idx] = newM;
-                                return copy;
-                              });
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <MatrixInput
-                        label="Matriz A"
-                        matrix={matrixA}
-                        dimensions={dimensionsA}
-                        isSelected={selectedMatrixCell?.matrix === 'A'}
-                        selectedCell={selectedMatrixCell?.matrix === 'A' ? { row: selectedMatrixCell.row, col: selectedMatrixCell.col } : null}
-                        onSelectMatrix={() => {}}
-                        onSelectCell={(row, col) => {
-                          setSelectedMatrixCell({ matrix: 'A', row, col });
-                          setSelectedVectorCell(null);
-                          setSelectedScalar(false);
-                        }}
-                        onCellChange={(r, c, v) => handleMatrixCellChange('A', r, c, v)}
-                        errors={matrixErrorsA}
-                        onDimensionsChange={(rows, cols) => {
-                          setDimensionsA({ rows, cols });
-                          const newMatrix = Array(rows)
-                            .fill(0)
-                            .map(() => Array(cols).fill(0));
-                          setMatrixA(newMatrix);
-                          setMatrixErrorsA({});
-                          setSelectedMatrixCell(null);
-                        }}
-                      />
-
-                      {needsTwoInputs && (
-                        <MatrixInput
-                          label="Matriz B"
-                          matrix={matrixB}
-                          dimensions={dimensionsB}
-                          isSelected={selectedMatrixCell?.matrix === 'B'}
-                          selectedCell={selectedMatrixCell?.matrix === 'B' ? { row: selectedMatrixCell.row, col: selectedMatrixCell.col } : null}
-                          onSelectMatrix={() => {}}
-                          onSelectCell={(row, col) => {
-                            setSelectedMatrixCell({ matrix: 'B', row, col });
-                            setSelectedVectorCell(null);
-                            setSelectedScalar(false);
-                          }}
-                            onCellChange={(r, c, v) => handleMatrixCellChange('B', r, c, v)}
-                            errors={matrixErrorsB}
-                          onDimensionsChange={(rows, cols) => {
-                            setDimensionsB({ rows, cols });
-                            const newMatrix = Array(rows)
-                              .fill(0)
-                              .map(() => Array(cols).fill(0));
-                            setMatrixB(newMatrix);
-                            setMatrixErrorsB({});
-                            setSelectedMatrixCell(null);
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              ) : inputMode === 'vector' ? (
-                <motion.div
-                  key="vector-inputs"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                >
-                  <VectorInput
-                    label="Vector A"
-                    vector={vectorA}
-                    dimension={dimensionVectorA}
-                    isSelected={selectedVectorCell?.vector === 'A'}
-                    selectedIndex={selectedVectorCell?.vector === 'A' ? selectedVectorCell.index : null}
-                    onSelectVector={() => {}}
-                    onSelectCell={(index) => {
-                      setSelectedVectorCell({ vector: 'A', index });
-                      setSelectedMatrixCell(null);
-                    }}
-                    onCellChange={(idx, v) => handleVectorCellChange('A', idx, v)}
-                    errors={vectorErrorsA}
-                    onDimensionChange={(dim) => {
-                      setDimensionVectorA(dim);
-                      const newVector = Array(dim).fill(0);
-                      setVectorA(newVector);
-                      setVectorErrorsA({});
-                      setSelectedVectorCell(null);
-                    }}
-                  />
-
-                  {needsTwoInputs && (
-                    <VectorInput
-                      label="Vector B"
-                      vector={vectorB}
-                      dimension={dimensionVectorB}
-                      isSelected={selectedVectorCell?.vector === 'B'}
-                      selectedIndex={selectedVectorCell?.vector === 'B' ? selectedVectorCell.index : null}
-                      onSelectVector={() => {}}
-                      onSelectCell={(index) => {
-                        setSelectedVectorCell({ vector: 'A', index });
-                        setSelectedMatrixCell(null);
-                        setSelectedScalar(false);
-                      }}
-                        onCellChange={(idx, v) => handleVectorCellChange('B', idx, v)}
-                        errors={vectorErrorsB}
-                      onDimensionChange={(dim) => {
-                        setDimensionVectorB(dim);
-                        const newVector = Array(dim).fill(0);
-                        setVectorB(newVector);
-                        setVectorErrorsB({});
-                        setSelectedVectorCell(null);
-                      }}
-                    />
-                  )}
-                </motion.div>
-              ) : inputMode === 'reduce' ? (
-                <motion.div
-                  key="reduce-inputs"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                >
-                  <MatrixInput
-                    label="Matriz A"
-                    matrix={matrixA}
-                    dimensions={dimensionsA}
-                    isSelected={selectedMatrixCell?.matrix === 'A'}
-                    selectedCell={selectedMatrixCell?.matrix === 'A' ? { row: selectedMatrixCell.row, col: selectedMatrixCell.col } : null}
-                    onSelectMatrix={() => {}}
-                    onSelectCell={(row, col) => {
-                      setSelectedMatrixCell({ matrix: 'A', row, col });
-                      setSelectedVectorCell(null);
-                    }}
-                    onCellChange={(r, c, v) => handleMatrixCellChange('A', r, c, v)}
-                    errors={matrixErrorsA}
-                    onDimensionsChange={(rows, cols) => {
-                      setDimensionsA({ rows, cols });
-                      const newMatrix = Array(rows)
-                        .fill(0)
-                        .map(() => Array(cols).fill(0));
-                      setMatrixA(newMatrix);
-                      setMatrixErrorsA({});
-                      setSelectedMatrixCell(null);
-                    }}
-                  />
-
-                  <VectorInput
-                    label="Vector B (términos independientes)"
-                    vector={vectorB}
-                    dimension={dimensionVectorB}
-                    isSelected={selectedVectorCell?.vector === 'B'}
-                    selectedIndex={selectedVectorCell?.vector === 'B' ? selectedVectorCell.index : null}
-                    onSelectVector={() => {}}
-                    onSelectCell={(index) => {
-                        setSelectedVectorCell({ vector: 'B', index });
-                        setSelectedMatrixCell(null);
-                        setSelectedScalar(false);
-                    }}
-                    onCellChange={(idx, v) => handleVectorCellChange('B', idx, v)}
-                    errors={vectorErrorsB}
-                    onDimensionChange={(dim) => {
-                      setDimensionVectorB(dim);
-                      const newVector = Array(dim).fill(0);
-                      setVectorB(newVector);
-                      setSelectedVectorCell(null);
-                    }}
-                  />
-                </motion.div>
-              ) : (
-                /* determinant mode */
-                <motion.div
-                  key="determinant-inputs"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-1 md:grid-cols-1 gap-6"
-                >
-                  <MatrixInput
-                    label="Matriz A"
-                    matrix={matrixA}
-                    dimensions={dimensionsA}
-                    isSelected={selectedMatrixCell?.matrix === 'A'}
-                    selectedCell={selectedMatrixCell?.matrix === 'A' ? { row: selectedMatrixCell.row, col: selectedMatrixCell.col } : null}
-                    onSelectMatrix={() => {}}
-                    onSelectCell={(row, col) => {
-                      setSelectedMatrixCell({ matrix: 'A', row, col });
-                      setSelectedVectorCell(null);
-                    }}
-                    onCellChange={(r, c, v) => handleMatrixCellChange('A', r, c, v)}
-                    onDimensionsChange={(rows, cols) => {
-                      setDimensionsA({ rows, cols });
-                      const newMatrix = Array(rows)
-                        .fill(0)
-                        .map(() => Array(cols).fill(0));
-                      setMatrixA(newMatrix);
-                      setSelectedMatrixCell(null);
-                    }}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <AnimatePresence mode="wait">{renderInputs()}</AnimatePresence>
 
             {/* scalar-multiplication UI is handled inside the animated inputs branch above */}
 
@@ -780,239 +847,9 @@ export function Calculator({ onBack }: CalculatorProps) {
               transition={{ delay: 0.2 }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl text-blue-200">Resultado</h3>
                 <Button
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  onClick={async () => {
-                    setSubmitError(null);
-                    setLoading(true);
-                    try {
-                      // prepare and validate inputs depending on mode
-                      // helper parsers
-                      const parseMatrix = (m: MatrixValue) => {
-                        const A: number[][] = [];
-                        const errors: Record<string, string> = {};
-                        m.forEach((row, i) => {
-                          const r: number[] = [];
-                          row.forEach((cell, j) => {
-                            const parsed = parseCellInput(String(cell));
-                            const key = `${i}-${j}`;
-                            if (!parsed.valid) {
-                              errors[key] = parsed.error || 'Invalid';
-                              r.push(NaN);
-                            } else r.push(parsed.value ?? NaN);
-                          });
-                          A.push(r);
-                        });
-                        return { A, errors };
-                      };
-
-                      const parseVector = (v: VectorValue) => {
-                        const out: number[] = [];
-                        const errors: Record<string, string> = {};
-                        v.forEach((cell, i) => {
-                          const parsed = parseCellInput(String(cell));
-                          const key = String(i);
-                          if (!parsed.valid) {
-                            errors[key] = parsed.error || 'Invalid';
-                            out.push(NaN);
-                          } else out.push(parsed.value ?? NaN);
-                        });
-                        return { out, errors };
-                      };
-
-                      // perform per-mode handling
-                      if (inputMode === 'matrix') {
-                        // if operation is determinant, use determinant endpoint
-                        if (operation === 'determinant') {
-                          const { A, errors } = parseMatrix(matrixA);
-                          if (Object.keys(errors).length) {
-                            setMatrixErrorsA(errors);
-                            setSubmitError('Hay entradas inválidas en la matriz A.');
-                            setLoading(false);
-                            return;
-                          }
-                            const res = await matrixDeterminant({ method: 'cofactors', A });
-                            localStorage.setItem('calc_last_result', JSON.stringify(res));
-                            setLastResult(res);
-                            window.dispatchEvent(new Event('calc:updated'));
-                          setLoading(false);
-                          return;
-                        }
-
-                        // general matrix operations using matrixOperate
-                        // support many-matrix operations
-                        if (manyOps.includes(operation)) {
-                          const matricesParsed: number[][][] = [];
-                          const allErrors: Record<string, string>[] = [];
-                          let anyErr = false;
-                          manyMatrices.forEach((m, mi) => {
-                            const parsedRes = parseMatrix(m);
-                            matricesParsed.push(parsedRes.A);
-                            allErrors.push(parsedRes.errors);
-                            if (Object.keys(parsedRes.errors).length) anyErr = true;
-                          });
-                          if (anyErr) {
-                            setManyMatricesErrors(allErrors);
-                            setSubmitError('Hay entradas inválidas en una o más matrices.');
-                            setLoading(false);
-                            return;
-                          }
-                          const payload: any = { operation: mapMatrixOperation(operation), matrices: matricesParsed };
-                          const res = await matrixOperate(payload);
-                          localStorage.setItem('calc_last_result', JSON.stringify(res));
-                          setLastResult(res);
-                          window.dispatchEvent(new Event('calc:updated'));
-                          setLoading(false);
-                          return;
-                        }
-
-                        const { A, errors: errA } = parseMatrix(matrixA);
-                        let payload: any = { operation: mapMatrixOperation(operation) };
-                        if (Object.keys(errA).length) {
-                          setMatrixErrorsA(errA);
-                          setSubmitError('Hay entradas inválidas en la matriz A.');
-                          setLoading(false);
-                          return;
-                        }
-                        payload.A = A;
-
-                        if (operation === 'scalar_mult') {
-                          const parsedScalar = parseCellInput(scalarInput);
-                          if (!parsedScalar.valid) {
-                            setScalarError(parsedScalar.error || 'Invalid scalar');
-                            setSubmitError('Escalar inválido');
-                            setLoading(false);
-                            return;
-                          }
-                          payload.scalar = parsedScalar.value ?? 0;
-                        }
-
-                        if (needsTwoInputs) {
-                          const { A: B, errors: errB } = parseMatrix(matrixB);
-                          if (Object.keys(errB).length) {
-                            setMatrixErrorsB(errB);
-                            setSubmitError('Hay entradas inválidas en la matriz B.');
-                            setLoading(false);
-                            return;
-                          }
-                          payload.B = B;
-                        }
-
-                        const res = await matrixOperate(payload);
-                        localStorage.setItem('calc_last_result', JSON.stringify(res));
-                        setLastResult(res);
-                        window.dispatchEvent(new Event('calc:updated'));
-                        setLoading(false);
-                        return;
-                      }
-
-                      if (inputMode === 'determinant') {
-                        const { A, errors } = parseMatrix(matrixA);
-                        if (Object.keys(errors).length) {
-                          setMatrixErrorsA(errors);
-                          setSubmitError('Hay entradas inválidas en la matriz A.');
-                          setLoading(false);
-                          return;
-                        }
-                        const res = await matrixDeterminant({ method: operation || 'cofactors', A });
-                        localStorage.setItem('calc_last_result', JSON.stringify(res));
-                        setLastResult(res);
-                        window.dispatchEvent(new Event('calc:updated'));
-                        setLoading(false);
-                        return;
-                      }
-
-                      if (inputMode === 'reduce') {
-                        // prepare Ab or A + b
-                        const { A, errors: errA } = parseMatrix(matrixA);
-                        const { out: b, errors: errb } = parseVector(vectorB);
-                        if (Object.keys(errA).length) {
-                          setMatrixErrorsA(errA);
-                          setSubmitError('Hay entradas inválidas en la matriz A.');
-                          setLoading(false);
-                          return;
-                        }
-                        if (Object.keys(errb).length) {
-                          setVectorErrorsB(errb);
-                          setSubmitError('Hay entradas inválidas en el vector B.');
-                          setLoading(false);
-                          return;
-                        }
-                        const res = await matrixReduce({ method: operation === 'gauss_jordan' ? 'gauss-jordan' : 'gauss', A, b });
-                        localStorage.setItem('calc_last_result', JSON.stringify(res));
-                        setLastResult(res);
-                        window.dispatchEvent(new Event('calc:updated'));
-                        setLoading(false);
-                        return;
-                      }
-
-                      if (inputMode === 'vector') {
-                        // support linear combination which requires A and b
-                        if (operation === 'linear_combination') {
-                          const { A, errors: errA } = parseMatrix(matrixA);
-                          const { out: b, errors: errb } = parseVector(vectorB);
-                          if (Object.keys(errA).length) {
-                            setMatrixErrorsA(errA);
-                            setSubmitError('Hay entradas inválidas en la matriz A.');
-                            setLoading(false);
-                            return;
-                          }
-                          if (Object.keys(errb).length) {
-                            setVectorErrorsB(errb);
-                            setSubmitError('Hay entradas inválidas en el vector B.');
-                            setLoading(false);
-                            return;
-                          }
-                          const res = await vectorCombination({ A, b });
-                          localStorage.setItem('calc_last_result', JSON.stringify(res));
-                          setLastResult(res);
-                          window.dispatchEvent(new Event('calc:updated'));
-                          setLoading(false);
-                          return;
-                        }
-
-                        // simple vector operations (add, subtract, dot)
-                        const { out: u, errors: errU } = parseVector(vectorA);
-                        const { out: v, errors: errV } = parseVector(vectorB);
-                        if (Object.keys(errU).length) {
-                          setVectorErrorsA(errU);
-                          setSubmitError('Hay entradas inválidas en el vector A.');
-                          setLoading(false);
-                          return;
-                        }
-                        if (needsTwoInputs && Object.keys(errV).length) {
-                          setVectorErrorsB(errV);
-                          setSubmitError('Hay entradas inválidas en el vector B.');
-                          setLoading(false);
-                          return;
-                        }
-
-                        // build vectors mapping expected by backend
-                        const vecs: Record<string, number[]> = {};
-                        vecs['u'] = u;
-                        if (needsTwoInputs) vecs['v'] = v;
-
-                        const op = mapVectorOperation(operation);
-                        if (!op) {
-                          setSubmitError('Operación de vectores no soportada por el backend.');
-                          setLoading(false);
-                          return;
-                        }
-
-                        const res = await vectorOperate({ operation: op, vectors: vecs });
-                        localStorage.setItem('calc_last_result', JSON.stringify(res));
-                        setLastResult(res);
-                        window.dispatchEvent(new Event('calc:updated'));
-                        setLoading(false);
-                        return;
-                      }
-                    } catch (e: any) {
-                      console.error(e);
-                      setSubmitError(e?.message || 'Error en la petición');
-                      setLoading(false);
-                    }
-                  }}
+                  onClick={handleCalculate}
                 >
                   {loading ? 'Calculando...' : 'Calcular'}
                 </Button>
@@ -1024,17 +861,12 @@ export function Calculator({ onBack }: CalculatorProps) {
                     {selectedOperation ? `Operación seleccionada: ${selectedOperation.description}` : 'Selecciona una operación y presiona calcular'}
                   </p>
 
-                  {/* Render lastResult if present */}
-                  {lastResult ? (
-                    <div className="text-left">
-                      <ResultPretty result={lastResult} />
-                    </div>
-                  ) : (
-                    <p className="text-purple-300/50 text-center">No hay resultados aún.</p>
-                  )}
+                  <ResultSection lastResult={lastResult} />
                 </div>
               </div>
             </motion.div>
+
+            {/* end Left Column */}
           </div>
 
           {/* Right Column - Keyboard */}
