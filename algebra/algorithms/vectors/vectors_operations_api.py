@@ -41,7 +41,7 @@ def vector_ops_api(
     steps: List[str] = []
     diagram: Optional[Dict[str, Any]] = None
 
-    if operation == "suma":
+    if operation == "add":
         u, v = vectors["u"], vectors["v"]
         same_dim(u, v)
         r = add(u, v)
@@ -50,7 +50,7 @@ def vector_ops_api(
         return {"input": {"operation": operation, "vectors": _pretty_map(vectors), "scalars": _pretty_scalars(scalars)},
                 "steps": steps, "result": {"vector": r, "vector_pretty": vec_pretty(r)}, "diagram": diagram}
 
-    if operation == "resta":
+    if operation == "sub":
         u, v = vectors["u"], vectors["v"]
         same_dim(u, v)
         r = sub(u, v)
