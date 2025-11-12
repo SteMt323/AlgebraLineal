@@ -4,7 +4,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from algebra.Constants.properties import DETERMINANT_PROPERTIES
 
 from algebra.algorithms.utils import (
-    isclose, format_number, matrix_as_fraction, shape, normalize_neg_zero, clone_with, TOL
+    isclose, format_number, shape, clone_with, TOL, 
+    det_steps_init, log_det_init, log_sarrus_extended,
+    log_sarrus_diag, log_det_result, log_cofactor_minor, log_subdet_2x2, 
+    log_cofactor_value, DetSteps
 )
 
 Number = float
@@ -18,78 +21,89 @@ def _check_square(A: Matrix) -> None:
         raise ValueError("La matriz debe ser cuadrada para calcular el determinante.")
 
 
-def determinant_sarrus(A: Matrix) -> Tuple[float, List[str]]:
-    """Calcula determinante usando la regla de Sarrus (solo 3x3).
-
-    Returns: (determinant, steps)
-    """
+def determinant_sarrus(A: List[List[float]]) -> Tuple[float, DetSteps]:
     _check_square(A)
-    n = shape(A)[0]
+    m, n = shape(A)
     if n != 3:
         raise ValueError("La Regla de Sarrus solo aplica para matrices 3x3.")
 
-    steps: List[str] = []
+    steps = det_steps_init()
+    method_name = "Sarrus"
+    log_det_init(steps, A, method_name)
+
+    # Extender matriz
+    extended = [row[:] + row[:2] for row in A]
+    log_sarrus_extended(steps, extended)
+
+    # Extraer entradas
     a11, a12, a13 = A[0]
     a21, a22, a23 = A[1]
     a31, a32, a33 = A[2]
 
-    # diagonales positivas
-    d1_pos = a11 * a22 * a33
-    d2_pos = a12 * a23 * a31
-    d3_pos = a13 * a21 * a32
-    positive = d1_pos + d2_pos + d3_pos
-    steps.append(f"Diagonales principales: {format_number(d1_pos)}, {format_number(d2_pos)}, {format_number(d3_pos)} (suma = {format_number(positive)})")
+    # Diagonales principales ↘
+    triples_pos = [(a11, a22, a33), (a12, a23, a31), (a13, a21, a32)]
+    d_pos_vals = [x*y*z for (x,y,z) in triples_pos]
+    pos_sum = sum(d_pos_vals)
+    log_sarrus_diag(steps, "principal", triples_pos, pos_sum)
 
-    # diagonales negativas
-    d1_neg = a13 * a22 * a31
-    d2_neg = a11 * a23 * a32
-    d3_neg = a12 * a21 * a33
-    negative = d1_neg + d2_neg + d3_neg
-    steps.append(f"Diagonales secundarias: {format_number(d1_neg)}, {format_number(d2_neg)}, {format_number(d3_neg)} (suma = {format_number(negative)})")
+    # Diagonales secundarias ↙
+    triples_neg = [(a13, a22, a31), (a11, a23, a32), (a12, a21, a33)]
+    d_neg_vals = [x*y*z for (x,y,z) in triples_neg]
+    neg_sum = sum(d_neg_vals)
+    log_sarrus_diag(steps, "secundaria", triples_neg, neg_sum)
 
-    det = positive - negative
-    steps.append(f"Determinante (Sarrus) = {format_number(positive)} - {format_number(negative)} = {format_number(det)}")
+    det = pos_sum - neg_sum
+    log_det_result(steps, det, method_name, pos_sum, neg_sum)
+
     return det, steps
 
 
-def determinant_cofactors(A: Matrix) -> Tuple[float, List[str]]:
-    """Calcula determinante por expansión por cofactores (recursivo).
 
-    Returns: (determinant, steps_summary)
-    """
+def determinant_cofactors(A: List[List[float]]) -> Tuple[float, DetSteps]:
     _check_square(A)
     n = shape(A)[0]
+    steps = det_steps_init()
+    method_name = "Cofactores"
+    log_det_init(steps, A, method_name)
 
-    steps: List[str] = []
-
-    def _det_cof(M: Matrix) -> float:
+    # Recursivo (detallamos solo: nivel superior + 2×2)
+    def _det_cof(M: List[List[float]], level: int) -> float:
         size = shape(M)[0]
         if size == 1:
             return M[0][0]
         if size == 2:
-            return M[0][0] * M[1][1] - M[0][1] * M[1][0]
+            a, b = M[0][0], M[0][1]
+            c, d = M[1][0], M[1][1]
+            det2 = a*d - b*c
+            # Solo log si no estamos en la raíz (para no repetir demasiado):
+            log_subdet_2x2(steps, M, det2)
+            return det2
+        # nivel > 2: sin logs internos (evitar explosión), solo cálculo
         total = 0.0
         for j in range(size):
-            # build submatrix excluding row 0 and column j
             sub = [[M[i][k] for k in range(size) if k != j] for i in range(1, size)]
-            sub_det = _det_cof(sub)
-            cofactor = ((-1) ** j) * M[0][j] * sub_det
-            steps.append(f"Cofactor for element (0,{j}) = ({format_number(M[0][j])}) * det(sub) = {format_number(cofactor)}")
-            total += cofactor
+            sub_det = _det_cof(sub, level+1)
+            total += ((-1)**j) * M[0][j] * sub_det
         return total
 
-    det = _det_cof(A)
-    steps.insert(0, f"Expansión por cofactores sobre la primera fila (tamaño {n}x{n})")
-    steps.append(f"Determinante (cofactores) = {format_number(det)}")
-    return det, steps
+    total = 0.0
+    # expandimos por primera fila con logs de menores y cofactores
+    for j in range(n):
+        a1j = A[0][j]
+        sign = 1 if (j % 2 == 0) else -1
+        M1j = [[A[i][k] for k in range(n) if k != j] for i in range(1, n)]
+
+        log_cofactor_minor(steps, j, M1j)  # mostrar submatriz
+        sub_det = _det_cof(M1j, level=1)
+        cofactor = sign * a1j * sub_det
+        total += cofactor
+        log_cofactor_value(steps, j, sign, a1j, sub_det, cofactor)
+
+    log_det_result(steps, total, method_name)
+    return total, steps
 
 
 def determinant_cramer(A: Matrix) -> Tuple[float, List[str]]:
-    """Compatibilidad con la interfaz 'cramer' — aquí usamos expansión por cofactores.
-
-    Returns same as cofactors for determinant calculation.
-    """
-    # In CramerMethod.py the 'cramer' option delegates to the generic determinant
     return determinant_cofactors(A)
 
 

@@ -15,8 +15,8 @@ from .algorithms.matrix.determinants.determinant_api import determinant_api
 
 from .algorithms.reduce.gauss_jordan import gauss_jordan_api
 from .algorithms.reduce.gauss import gauss_api
-from .algorithms.vectors.vectors_comb import linear_combination_api
-from .algorithms.vectors.vectors_operations import vector_ops_api
+from .algorithms.vectors.vectors_comb_api import linear_combination_api
+from .algorithms.vectors.vectors_operations_api import vector_ops_api
 from .algorithms.matrix.matrix_api import matrix_ops_api
 
 logger = logging.getLogger("algebra")

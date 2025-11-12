@@ -28,4 +28,19 @@ export async function matrixDeterminant(payload: { method: string; A: number[][]
   return res.data
 }
 
+export async function matrixReduce(payload: { method: string; A?: number[][]; b?: number[]; Ab?: number[][]; options?: any }) {
+  const res = await client.post('api/v1/matrix/reduce', payload)
+  return res.data
+}
+
+export async function vectorOperate(payload: { operation: string; vectors: Record<string, number[]>; scalars?: Record<string, number>; options?: any }) {
+  const res = await client.post('api/v1/vectors/operate', payload)
+  return res.data
+}
+
+export async function vectorCombination(payload: { A: number[][]; b: number[]; options?: any }) {
+  const res = await client.post('api/v1/vectors/combination', payload)
+  return res.data
+}
+
 export default client

@@ -58,7 +58,7 @@ class VectorCombinationSerializer(serializers.Serializer):
 
     
 class VectorOperateSerializer(serializers.Serializer):
-    operation = serializers.ChoiceField(choices=['suma', 'resta', 'escalar', 'comb2', 'comb3', 'dot'])
+    operation = serializers.ChoiceField(choices=['add', 'sub', 'escalar', 'comb2', 'comb3', 'dot'])
 
     # Dict[str, List[float]]
     vectors = serializers.DictField(
@@ -88,7 +88,7 @@ class VectorOperateSerializer(serializers.Serializer):
             if len(set(sizes)) != 1:
                 raise serializers.ValidationError(f"Los vectores {', '.join(vnames)} deben tener la misma longitud.")
 
-        if op in ['suma', 'resta']:
+        if op in ['add', 'sub']:
             same_len('u', 'v')
 
         elif op == "escalar":
@@ -175,6 +175,7 @@ class MatrixOperateSerializer(serializers.Serializer):
                     raise serializers.ValidationError(f"Incompatibilidad en la cadena en posición {i} -> {i+1}: cols(M{i}) != rows(M{i+1}).")
 
         if op == 'inverse':
+            
             if A is None:
                 raise serializers.ValidationError("Para 'inverse' envía 'A'.")
             if len(A) != len(A[0]):

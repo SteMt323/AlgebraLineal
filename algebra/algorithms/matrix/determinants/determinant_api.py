@@ -13,11 +13,9 @@ from algebra.algorithms.utils import format_number, matrix_as_fraction
 def determinant_api(*, A: List[List[float]], method: str = "cofactors", options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     opt = options or {}
     method = (method or "cofactors").lower()
-
     if A is None:
         raise ValueError("Se requiere la matriz A.")
 
-    # choose method
     if method == "sarrus":
         det, steps = determinant_sarrus(A)
     elif method == "cofactors":
@@ -31,10 +29,7 @@ def determinant_api(*, A: List[List[float]], method: str = "cofactors", options:
 
     return {
         "input": {"method": method, "A": A, "A_pretty": matrix_as_fraction(A)},
-        "steps": steps,
-        "result": {
-            "determinant": det,
-            "determinant_pretty": format_number(det)
-        },
+        "steps": steps,   # <-- YA ES {"frame":{"states":[...]}, "text_steps":[...]}
+        "result": {"determinant": det, "determinant_pretty": format_number(det)},
         "properties": props,
     }

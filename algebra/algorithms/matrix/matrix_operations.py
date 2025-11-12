@@ -203,8 +203,13 @@ def inverse(A: Matrix, tol: float = TOL, frame: dict | None = None, check_props:
     # construir matriz aumentada [A | I]
     M = [list(map(float, row)) + [1.0 if i == j else 0.0 for j in range(n)] for i, row in enumerate([r[:] for r in A])]
     steps: List[str] = []
+    # If a frame dict is provided, prepare both a backwards-compatible
+    # `states` list (used previously) and a new `step_states` list that will
+    # contain a snapshot of the matrix after each textual step. This allows the
+    # API consumer to align text_steps[i] with step_states[i].
     if frame is not None:
         frame['states'] = []
+        frame['step_states'] = []
         frame['states'].append({'tag': 'initial', 'matrix': clone_with(M)})
 
     row = 0
@@ -226,6 +231,9 @@ def inverse(A: Matrix, tol: float = TOL, frame: dict | None = None, check_props:
         if sel != row:
             M[row], M[sel] = M[sel], M[row]
             steps.append(f"Intercambio filas: F{row+1} <-> F{sel+1}")
+            # record snapshot after swap so clients can align text steps -> matrices
+            if frame is not None:
+                frame['step_states'].append({'tag': f'swap_{row}_{sel}', 'matrix': clone_with(M)})
 
         pivot = M[row][col]
         # escalar fila para pivot = 1
@@ -234,6 +242,9 @@ def inverse(A: Matrix, tol: float = TOL, frame: dict | None = None, check_props:
                 M[row][j] /= pivot
             steps.append(f"R{row+1} ← R{row+1} / {format_number(pivot)}")
             normalize_neg_zero(M)
+            # snapshot after scaling pivot row
+            if frame is not None:
+                frame['step_states'].append({'tag': f'scale_{row}', 'matrix': clone_with(M)})
 
         # eliminar en otras filas
         for r in range(n):
@@ -246,6 +257,9 @@ def inverse(A: Matrix, tol: float = TOL, frame: dict | None = None, check_props:
                 M[r][j] -= factor * M[row][j]
             steps.append(f"R{r+1} ← R{r+1} - ({format_number(factor)})·R{row+1}")
             normalize_neg_zero(M)
+            # snapshot after eliminating row r using current pivot
+            if frame is not None:
+                frame['step_states'].append({'tag': f'elim_r{r}_c{col}', 'matrix': clone_with(M)})
 
         if frame is not None:
             frame['states'].append({'tag': f'pivot_{row}_{col}', 'matrix': clone_with(M)})
