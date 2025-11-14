@@ -61,6 +61,53 @@ export const ResultPretty: React.FC<ResultPrettyProps> = ({ result }) => {
     );
   };
 
+  const renderMatrixObject = (matrixObj: any) => {
+    if (!matrixObj) return null;
+    // common shapes: { augmented: [...], shape: [...] } or direct 2D array
+    const augmented = matrixObj.augmented ?? matrixObj.U ?? matrixObj.RREF ?? null;
+    if (augmented && Array.isArray(augmented)) {
+      return <MatrixTable matrix={(augmented as any).map((r: any[]) => r.map((c: any) => String(c)))} />;
+    }
+
+    // if matrixObj itself is a nested array
+    if (Array.isArray(matrixObj) && Array.isArray(matrixObj[0])) {
+      return <MatrixTable matrix={matrixObj.map((r: any[]) => r.map((c: any) => String(c)))} />;
+    }
+
+    return null;
+  };
+
+  const renderStep = (s: any, i: number) => {
+    // if it's a plain string, render as before
+    if (typeof s === 'string') return frame ? renderTextStepWithMatrix(s, i) : (
+      <div key={i} className="mb-2">
+        <pre className="text-xs text-purple-100">{s}</pre>
+      </div>
+    );
+
+    // if it's an object with operation and matrix
+    const op = s.operation ?? s.op ?? `Paso ${i}`;
+    const note = s.note ?? s.tag ?? null;
+    const matrixObj = s.matrix ?? null;
+
+    return (
+      <div key={i} className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-semibold text-blue-200">{op}</div>
+          {note && <div className="text-xs text-white/60 px-2 py-1 rounded bg-white/3">{note}</div>}
+        </div>
+
+        <div className="p-3 bg-gradient-to-br from-white/3 to-white/2 rounded-lg border border-white/10">
+          {matrixObj ? (
+            renderMatrixObject(matrixObj)
+          ) : (
+            <div className="text-xs text-purple-100">{JSON.stringify(s, null, 2)}</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderParticular = (particularPretty: any, particular: any) => {
     if (particularPretty) {
       if (Array.isArray(particularPretty)) {
@@ -107,6 +154,19 @@ export const ResultPretty: React.FC<ResultPrettyProps> = ({ result }) => {
             <div className="text-xs text-purple-100 mb-2">Rango A: {sm.ranks.rankA}, Rango [A|b]: {sm.ranks.rankAb}</div>
           )}
 
+          {/* homogeneous and trivial solution info */}
+          <div className="text-xs text-purple-100 mb-2">
+            {typeof sm.homogeneous === 'boolean' && (
+              <div>{sm.homogeneous ? 'El sistema es homogéneo' : 'El sistema no es homogéneo'}</div>
+            )}
+            {typeof sm.trivial_solution === 'boolean' && (
+              <div>{sm.trivial_solution ? 'El sistema tiene solución trivial' : 'El sistema no tiene solución trivial'}</div>
+            )}
+            {sm.dependence && (
+              <div>Dependencia: {String(sm.dependence)}</div>
+            )}
+
+          </div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div>
               <div className="text-white/70 text-[11px]">Variables básicas</div>
@@ -131,6 +191,46 @@ export const ResultPretty: React.FC<ResultPrettyProps> = ({ result }) => {
               </div>
             </div>
           )}
+
+          {/* Parametric pretty form if exists */}
+          {sm.parametric_form?.pretty && (
+            <div className="mt-3">
+              <div className="text-white/70 text-[11px]">Forma paramétrica</div>
+              <div className="text-purple-100 text-xs mt-1">
+                <ul className="list-disc pl-5">
+                  {sm.parametric_form.pretty.map((line:any, idx:number) => (
+                    <li key={idx}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Reduced forms (U / RREF) */}
+          {sm.reduced_form && (
+            <div className="mt-3">
+              <div className="text-white/70 text-[11px]">Formas reducidas</div>
+              <div className="mt-2 space-y-2">
+                {sm.reduced_form.U && (
+                  <div>
+                    <div className="text-xs text-white/70">U (triangular superior)</div>
+                    <div className="p-2 bg-white/3 rounded mt-1">
+                      {renderMatrixObject({ U: sm.reduced_form.U })}
+                    </div>
+                  </div>
+                )}
+
+                {sm.reduced_form.RREF && (
+                  <div>
+                    <div className="text-xs text-white/70">RREF</div>
+                    <div className="p-2 bg-white/3 rounded mt-1">
+                      {renderMatrixObject({ RREF: sm.reduced_form.RREF })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -144,12 +244,8 @@ export const ResultPretty: React.FC<ResultPrettyProps> = ({ result }) => {
           <div className="text-sm font-semibold text-blue-200 mb-3">Pasos</div>
           <div className="space-y-3">
             {stepsArray.map((s:any, i:number) => (
-              // if frame is present, align text_steps with frame snapshots
-              frame ? renderTextStepWithMatrix(String(s), i) : (
-                <div key={i} className="mb-2">
-                  <pre className="text-xs text-purple-100">{String(s)}</pre>
-                </div>
-              )
+              // if frame is present, align text_steps with frame snapshots (these are textual steps)
+              frame ? renderTextStepWithMatrix(String(s), i) : renderStep(s, i)
             ))}
           </div>
         </div>
