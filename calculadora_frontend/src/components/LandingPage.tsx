@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { useRef } from 'react';
 
 interface LandingPageProps {
-  onStart: () => void;
+    onStart: () => void;
 }
 
 export function LandingPage({ onStart }: LandingPageProps) {
@@ -75,7 +75,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-2">
                 <Calculator className="text-blue-400" size={24} />
               </div>
-              <span className="text-xl text-white">LinealAlgebra</span>
+              <span className="text-xl text-white">Calculadora Mamadisima</span>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors">Características</a>
@@ -119,7 +119,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  Resuelve y aprende paso a paso con nuestra calculadora avanzada de álgebra lineal.
+                  Calculadora del curso de Algebra Lineal. Resuelve y aprende paso a paso.
                 </motion.p>
 
                 {/* CTA Buttons */}
@@ -135,8 +135,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
                     className="group relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-8 py-6 text-lg shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all"
                   >
                     <span className="flex items-center gap-3">
-                      Abrir Calculadora
-                      <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+                      Calculadora Algebra
                     </span>
                   </Button>
                   <Button
@@ -144,7 +143,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
                     size="lg"
                     className="backdrop-blur-xl bg-white/5 border-white/10 text-white hover:bg-white/10 px-8 py-6 text-lg"
                   >
-                    Ver Demo
+                    Métodos Numéricos
                   </Button>
                 </motion.div>
 

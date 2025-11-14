@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Minus, X as Multiply, Divide, RotateCw, Calculator as CalcIcon, Grid3x3Icon, Triangle } from 'lucide-react';
+import { motion, AnimatePresence, color } from 'framer-motion';
+import { ArrowLeft, Plus, Minus, X as Multiply, RotateCw, Calculator as CalcIcon, Grid3x3Icon, Triangle } from 'lucide-react';
 import { Button } from './ui/button';
-import { MatrixInput } from './inputs/MatrixInput';
-import { VectorInput } from './inputs/VectorInput';
 import { DigitalKeyboard } from './DigitalKeyboard';
-import EscalarInput from './inputs/EscalarInput';
 import { OperationSelector } from './OperationSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import parseCellInput from '../utils/parseInput';
 import { matrixOperate, matrixDeterminant, matrixReduce, vectorOperate, vectorCombination } from '../api/client';
-import ResultPretty from './Output/ResultPretty';
 import MatricesSection from './calculator_components/MatricesSection';
 import SystemEquationSection from './calculator_components/SystemEquationSection';
 import DeterminantSection from './calculator_components/DeterminantSection';
 import VectorsSection from './calculator_components/VectorsSection';
 import ResultSection from './calculator_components/ResultSection';
+import { fontFamily } from '@mui/system';
 
     // Map frontend operation ids to backend expected operation strings
     function mapMatrixOperation(opId: string) {
@@ -761,7 +758,7 @@ export function Calculator({ onBack }: CalculatorProps) {
           <div className="flex items-center gap-3">
             <CalcIcon className="text-purple-300" size={24} />
             <h2 className="text-2xl bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-              LinealCalc
+              MunguiaCore
             </h2>
           </div>
           <div className="w-24" />
@@ -774,6 +771,7 @@ export function Calculator({ onBack }: CalculatorProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
+          
         >
           <Tabs 
             value={inputMode} 
@@ -787,8 +785,9 @@ export function Calculator({ onBack }: CalculatorProps) {
               setSelectedScalar(false);
             }}
             className="w-full"
-          >
-            <TabsList className="grid w-full mx-auto grid-cols-4 backdrop-blur-xl bg-white/5 border border-white/10 h-14">
+          > 
+
+            <TabsList className="grid w-full mx-auto grid-cols-4 backdrop-blur-xl bg-white/5 border border-white/10 h-14 text-white">
               <TabsTrigger 
                 value="matrix" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base"

@@ -85,7 +85,7 @@ export default function MatricesSection(props: Props) {
               max={6}
               value={manyCount}
               onChange={(e) => setManyCount(Number(e.target.value || 2))}
-              className="bg-white/5 border border-white/10 rounded px-2 py-1 w-20"
+              className="bg-white/5 border border-white/10 rounded px-2 py-1 w-20 text-blue-200"
             />
           </div>
 
