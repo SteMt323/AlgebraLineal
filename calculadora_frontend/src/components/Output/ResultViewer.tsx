@@ -13,7 +13,17 @@ export default function ResultViewer() {
   useEffect(() => {
     function update() {
       const raw = localStorage.getItem('calc_last_result')
-      if (raw) setResult(JSON.parse(raw))
+      if (!raw) {
+        setResult(null)
+        return
+      }
+      try {
+        setResult(JSON.parse(raw))
+      } catch (e) {
+        console.error('Failed to parse cached result, clearing cache', e)
+        localStorage.removeItem('calc_last_result')
+        setResult(null)
+      }
     }
     update()
     window.addEventListener('calc:updated', update)
