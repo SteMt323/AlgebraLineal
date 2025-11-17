@@ -75,7 +75,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-2">
                 <Calculator className="text-blue-400" size={24} />
               </div>
-              <span className="text-xl text-white">Calculadora Mamadisima</span>
+              <span className="text-xl text-white">Munguia Core</span>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm text-gray-400">
               <a href="#" className="hover:text-white transition-colors">Características</a>
@@ -292,7 +292,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
           transition={{ delay: 1 }}
         >
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-            <p>© 2025 LinealAlgebra. Herramienta profesional de álgebra lineal.</p>
+            <p>© 2025 Calculadora. Programa desarrollado en el curso de Algebra Lineal UAM.</p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-gray-300 transition-colors">Términos</a>
               <a href="#" className="hover:text-gray-300 transition-colors">Privacidad</a>

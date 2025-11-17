@@ -32,7 +32,7 @@ import { fontFamily } from '@mui/system';
     function mapVectorOperation(opId: string) {
       const m: Record<string, string | null> = {
         add_vectores: 'add',
-        sub_vectorers: 'sub',
+        sub_vectores: 'sub',
         dot: 'dot',
         scalar_vect: 'escalar',
         comb2: 'comb2',
@@ -68,10 +68,12 @@ export function Calculator({ onBack }: CalculatorProps) {
   // Vector state
   const [vectorA, setVectorA] = useState<VectorValue>([0, 0, 0]);
   const [vectorB, setVectorB] = useState<VectorValue>([0, 0, 0]);
+  const [vectorC, setVectorC] = useState<VectorValue>([0, 0, 0]);
   const [dimensionVectorA, setDimensionVectorA] = useState(3);
   const [dimensionVectorB, setDimensionVectorB] = useState(3);
+  const [dimensionVectorC, setDimensionVectorC] = useState(3);
   const [selectedVectorCell, setSelectedVectorCell] = useState<{ 
-    vector: 'A' | 'B'; 
+    vector: 'A' | 'B' | 'C'; 
     index: number 
   } | null>(null);
 
@@ -90,21 +92,27 @@ export function Calculator({ onBack }: CalculatorProps) {
 
   // scalar input for scalar multiplication (string so parser can accept pi, fractions...)
   const [scalarInput, setScalarInput] = useState<string>('1');
+  const [scalarInput2, setScalarInput2] = useState<string>('1');
   const [scalarError, setScalarError] = useState<string | null>(null);
+  const [scalarError2, setScalarError2] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<any | null>(null);
 
+  // Clear any cached API result when opening the calculator
   useEffect(() => {
-    const raw = localStorage.getItem('calc_last_result');
-    if (raw) {
-      try {
-        setLastResult(JSON.parse(raw));
-      } catch (e) {
-        // ignore
-      }
-    }
+    localStorage.removeItem('calc_last_result');
+    setLastResult(null);
+    window.dispatchEvent(new Event('calc:updated'));
   }, []);
+
+  // when operation changes, clear scalar selection and cached results
+  useEffect(() => {
+    if (operation !== 'scalar_mult') setSelectedScalar(false);
+    setLastResult(null);
+    localStorage.removeItem('calc_last_result');
+    window.dispatchEvent(new Event('calc:updated'));
+  }, [operation]);
 
   const handleKeyPress = (value: string) => {
     // Prefer writing to a selected scalar if present
@@ -261,18 +269,21 @@ export function Calculator({ onBack }: CalculatorProps) {
     });
   };
 
-  const handleVectorCellChange = (vectorName: 'A' | 'B', index: number, newValue: string) => {
-    const setter = vectorName === 'A' ? setVectorA : setVectorB;
-    const vector = vectorName === 'A' ? vectorA : vectorB;
+  const handleVectorCellChange = (vectorName: 'A' | 'B' | 'C', index: number, newValue: string) => {
+    const setter = vectorName === 'A' ? setVectorA : (vectorName === 'B' ? setVectorB : setVectorC);
+    const vector = vectorName === 'A' ? vectorA : (vectorName === 'B' ? vectorB : vectorC);
     const newVector = vector.map((v, i) => (i === index ? newValue : v));
     const parse = parseCellInput(newValue);
     const key = String(index);
     if (vectorName === 'A') {
       if (!parse.valid) setVectorErrorsA((prev) => ({ ...prev, [key]: parse.error }));
       else setVectorErrorsA((prev) => { const copy = { ...prev }; delete copy[key]; return copy; });
-    } else {
+    } else if (vectorName === 'B') {
       if (!parse.valid) setVectorErrorsB((prev) => ({ ...prev, [key]: parse.error }));
       else setVectorErrorsB((prev) => { const copy = { ...prev }; delete copy[key]; return copy; });
+    } else {
+      if (!parse.valid) setVectorErrorsC((prev) => ({ ...prev, [key]: parse.error }));
+      else setVectorErrorsC && setVectorErrorsC((prev:any) => { const copy = { ...prev }; delete copy[key]; return copy; });
     }
 
     setter(newVector);
@@ -283,6 +294,7 @@ export function Calculator({ onBack }: CalculatorProps) {
   const [matrixErrorsB, setMatrixErrorsB] = useState<Record<string, string>>({});
   const [vectorErrorsA, setVectorErrorsA] = useState<Record<string, string>>({});
   const [vectorErrorsB, setVectorErrorsB] = useState<Record<string, string>>({});
+  const [vectorErrorsC, setVectorErrorsC] = useState<Record<string, string>>({});
 
   // calculate handler (extracted from previous inline onClick)
   const handleCalculate = async () => {
@@ -481,10 +493,6 @@ export function Calculator({ onBack }: CalculatorProps) {
           return;
         }
 
-        const vecs: Record<string, number[]> = {};
-        vecs['u'] = u;
-        if (needsTwoInputs) vecs['v'] = v;
-
         const op = mapVectorOperation(operation);
         if (!op) {
           setSubmitError('Operación de vectores no soportada por el backend.');
@@ -492,7 +500,72 @@ export function Calculator({ onBack }: CalculatorProps) {
           return;
         }
 
-        const res = await vectorOperate({ operation: op, vectors: vecs });
+        // Build payload depending on operation requirements
+        const payload: any = { operation: op };
+
+        if (op === 'escalar') {
+          // scalar multiplication: vectors.u and scalars.c
+          payload.vectors = { u };
+          const parsedScalar = parseCellInput(scalarInput);
+          if (!parsedScalar.valid) {
+            setScalarError(parsedScalar.error || 'Escalar inválido');
+            setSubmitError('Escalar inválido');
+            setLoading(false);
+            return;
+          }
+          payload.scalars = { c: parsedScalar.value ?? 0 };
+        } else if (op === 'comb2') {
+          // c*u + d*v -> vectors.u, vectors.v and scalars.c, scalars.d
+          payload.vectors = { u, v };
+          const parsedC = parseCellInput(scalarInput);
+          const parsedD = parseCellInput(scalarInput2);
+          if (!parsedC.valid) {
+            setScalarError(parsedC.error || 'Escalar c inválido');
+            setSubmitError('Escalar c inválido');
+            setLoading(false);
+            return;
+          }
+          if (!parsedD.valid) {
+            setScalarError2(parsedD.error || 'Escalar d inválido');
+            setSubmitError('Escalar d inválido');
+            setLoading(false);
+            return;
+          }
+          payload.scalars = { c: parsedC.value ?? 0, d: parsedD.value ?? 0 };
+        } else if (op === 'comb3') {
+          // u + c*v + d*w -> vectors.u, v, w and scalars.c, d
+          const { out: w, errors: errW } = parseVector(vectorC);
+          if (Object.keys(errW).length) {
+            setVectorErrorsC(errW);
+            setSubmitError('Hay entradas inválidas en el vector C.');
+            setLoading(false);
+            return;
+          }
+          payload.vectors = { u, v, w };
+          const parsedC = parseCellInput(scalarInput);
+          const parsedD = parseCellInput(scalarInput2);
+          if (!parsedC.valid) {
+            setScalarError(parsedC.error || 'Escalar c inválido');
+            setSubmitError('Escalar c inválido');
+            setLoading(false);
+            return;
+          }
+          if (!parsedD.valid) {
+            setScalarError2(parsedD.error || 'Escalar d inválido');
+            setSubmitError('Escalar d inválido');
+            setLoading(false);
+            return;
+          }
+          payload.scalars = { c: parsedC.value ?? 0, d: parsedD.value ?? 0 };
+        } else if (op === 'dot') {
+          // dot expects vectors 'v' and 'w' in backend
+          payload.vectors = { v: u, w: v };
+        } else {
+          // default add/sub: backend expects 'u' and 'v'
+          payload.vectors = { u, v };
+        }
+
+        const res = await vectorOperate(payload);
         localStorage.setItem('calc_last_result', JSON.stringify(res));
         setLastResult(res);
         window.dispatchEvent(new Event('calc:updated'));
@@ -610,6 +683,148 @@ export function Calculator({ onBack }: CalculatorProps) {
     }
 
     if (inputMode === 'vector') {
+      // Multiplicación escalar
+      if (operation === 'scalar_vect') {
+        return (
+          <motion.div
+            key="vector-inputs-scalar"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <VectorsSection
+              vectorA={vectorA}
+              dimensionVectorA={dimensionVectorA}
+              selectedVectorCell={selectedVectorCell}
+              setSelectedVectorCell={setSelectedVectorCell}
+              setSelectedMatrixCell={setSelectedMatrixCell}
+              setSelectedScalar={setSelectedScalar}
+              selectedScalar={selectedScalar}
+              handleVectorCellChange={handleVectorCellChange}
+              vectorErrorsA={vectorErrorsA}
+              onDimensionVectorAChange={(d) => { setDimensionVectorA(d); const newVector = Array(d).fill(0); setVectorA(newVector); setVectorErrorsA({}); setSelectedVectorCell(null); }}
+              needsTwoInputs={false}
+              showScalar1={true}
+              scalarInput1={scalarInput}
+              setScalarInput1={setScalarInput}
+            />
+          </motion.div>
+        );
+      }
+
+      // Combinación lineal de 2 vectores
+      if (operation === 'comb2') {
+        return (
+          <motion.div
+            key="vector-inputs-comb2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <VectorsSection
+              vectorA={vectorA}
+              vectorB={vectorB}
+              dimensionVectorA={dimensionVectorA}
+              dimensionVectorB={dimensionVectorB}
+              selectedVectorCell={selectedVectorCell}
+              setSelectedVectorCell={setSelectedVectorCell}
+              setSelectedMatrixCell={setSelectedMatrixCell}
+              setSelectedScalar={setSelectedScalar}
+              selectedScalar={selectedScalar}
+              handleVectorCellChange={handleVectorCellChange}
+              vectorErrorsA={vectorErrorsA}
+              vectorErrorsB={vectorErrorsB}
+              onDimensionVectorAChange={(d) => { setDimensionVectorA(d); const newVector = Array(d).fill(0); setVectorA(newVector); setVectorErrorsA({}); setSelectedVectorCell(null); }}
+              onDimensionVectorBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
+              needsTwoInputs={true}
+              showScalar1={true}
+              showScalar2={true}
+              scalarInput1={scalarInput}
+              setScalarInput1={setScalarInput}
+              scalarInput2={scalarInput2}
+              setScalarInput2={setScalarInput2}
+            />
+          </motion.div>
+        );
+      }
+
+      // Combinación lineal de 3 vectores
+      if (operation === 'comb3') {
+        // Por ahora vectorC es igual a vectorB, pero debería tener su propio estado si se requiere
+        return (
+          <motion.div
+            key="vector-inputs-comb3"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <VectorsSection
+              vectorA={vectorA}
+              vectorB={vectorB}
+              vectorC={vectorC}
+              dimensionVectorA={dimensionVectorA}
+              dimensionVectorB={dimensionVectorB}
+              dimensionVectorC={dimensionVectorC}
+              selectedVectorCell={selectedVectorCell}
+              setSelectedVectorCell={setSelectedVectorCell}
+              setSelectedMatrixCell={setSelectedMatrixCell}
+              setSelectedScalar={setSelectedScalar}
+              selectedScalar={selectedScalar}
+              handleVectorCellChange={handleVectorCellChange}
+              vectorErrorsA={vectorErrorsA}
+              vectorErrorsB={vectorErrorsB}
+              vectorErrorsC={vectorErrorsC}
+              onDimensionVectorAChange={(d) => { setDimensionVectorA(d); const newVector = Array(d).fill(0); setVectorA(newVector); setVectorErrorsA({}); setSelectedVectorCell(null); }}
+              onDimensionVectorBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
+              onDimensionVectorC={(d) => { setDimensionVectorC(d); const newVector = Array(d).fill(0); setVectorC(newVector); setVectorErrorsC({}); setSelectedVectorCell(null); }}
+              needsTwoInputs={true}
+              showScalar1={true}
+              showScalar2={true}
+              scalarInput1={scalarInput}
+              setScalarInput1={setScalarInput}
+              scalarInput2={scalarInput2}
+              setScalarInput2={setScalarInput2}
+            />
+          </motion.div>
+        );
+      }
+
+      // Producto escalar, suma, resta usan el render original
+      if (operation === 'linear_combination') {
+        // Ax = b: mostrar matriz A y vector b
+        return (
+          <motion.div
+            key="system-equation-inputs"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <SystemEquationSection
+              matrixA={matrixA}
+              dimensionsA={dimensionsA}
+              vectorB={vectorB}
+              dimensionVectorB={dimensionVectorB}
+              selectedMatrixCell={selectedMatrixCell}
+              selectedVectorCell={selectedVectorCell}
+              selectedScalar={selectedScalar}
+              matrixErrorsA={matrixErrorsA}
+              vectorErrorsB={vectorErrorsB}
+              setSelectedMatrixCell={setSelectedMatrixCell}
+              setSelectedVectorCell={setSelectedVectorCell}
+              setSelectedScalar={setSelectedScalar}
+              handleMatrixCellChange={handleMatrixCellChange}
+              handleVectorCellChange={handleVectorCellChange}
+              onDimensionsAChange={(r,c) => { setDimensionsA({ rows: r, cols: c }); const newMatrix = Array(r).fill(0).map(() => Array(c).fill(0)); setMatrixA(newMatrix); setMatrixErrorsA({}); setSelectedMatrixCell(null); }}
+              onDimensionBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
+            />
+          </motion.div>
+        );
+      }
+
       return (
         <motion.div
           key="vector-inputs"
@@ -627,6 +842,7 @@ export function Calculator({ onBack }: CalculatorProps) {
             setSelectedVectorCell={setSelectedVectorCell}
             setSelectedMatrixCell={setSelectedMatrixCell}
             setSelectedScalar={setSelectedScalar}
+            selectedScalar={selectedScalar}
             handleVectorCellChange={handleVectorCellChange}
             vectorErrorsA={vectorErrorsA}
             vectorErrorsB={vectorErrorsB}
@@ -773,7 +989,7 @@ export function Calculator({ onBack }: CalculatorProps) {
           className="mb-6"
           
         >
-          <Tabs 
+            <Tabs 
             value={inputMode} 
             onValueChange={(v) => {
                 const mode = v as InputMode;
@@ -783,6 +999,10 @@ export function Calculator({ onBack }: CalculatorProps) {
               setSelectedMatrixCell(null);
               setSelectedVectorCell(null);
               setSelectedScalar(false);
+              // Clear previous result cache when switching modes
+              setLastResult(null);
+              localStorage.removeItem('calc_last_result');
+              window.dispatchEvent(new Event('calc:updated'));
             }}
             className="w-full"
           > 
