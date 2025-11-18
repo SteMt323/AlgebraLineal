@@ -20,16 +20,20 @@
 import { useState } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { Calculator } from './components/Calculator';
+import NumericMethods from './components/NumericMethods';
 
 export default function App() {
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showNumeric, setShowNumeric] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900">
-      {!showCalculator ? (
-        <LandingPage onStart={() => setShowCalculator(true)} />
-      ) : (
+      {!showCalculator && !showNumeric ? (
+        <LandingPage onStart={() => setShowCalculator(true)} onOpenNumeric={() => setShowNumeric(true)} />
+      ) : showCalculator ? (
         <Calculator onBack={() => setShowCalculator(false)} />
+      ) : (
+        <NumericMethods onBack={() => setShowNumeric(false)} />
       )}
     </div>
   );

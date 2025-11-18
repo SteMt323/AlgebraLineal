@@ -7,7 +7,7 @@ interface DigitalKeyboardProps {
   // additionally support scalar selection marker (when scalar input is focused)
   selectedCell:
     | { row: number; col: number }
-    | { vector: 'A' | 'B'; index: number }
+    | { vector: 'A' | 'B' | 'C'; index: number }
     | { scalar: true }
     | null;
 }

@@ -43,4 +43,21 @@ export async function vectorCombination(payload: { A: number[][]; b: number[]; o
   return res.data
 }
 
+export async function errorAcumulado(payload: {
+  initial_amount: string
+  iterations: number
+  mode: 'trunc' | 'round'
+  rate: string
+  approx_decimals: number
+  interest_display_decimals?: number
+}) {
+  const res = await client.post('api/v1/numeric/error-accumulation', payload)
+  return res.data
+}
+
+export async function errorAbsRel(payload: { true_value: string; approx_value: string; decimals_display?: number }) {
+  const res = await client.post('api/v1/numeric/abs-rel-error', payload)
+  return res.data
+}
+
 export default client

@@ -4,10 +4,11 @@ import { Button } from './ui/button';
 import { useRef } from 'react';
 
 interface LandingPageProps {
-    onStart: () => void;
+  onStart: () => void;
+  onOpenNumeric?: () => void;
 }
 
-export function LandingPage({ onStart }: LandingPageProps) {
+export function LandingPage({ onStart, onOpenNumeric }: LandingPageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -139,6 +140,7 @@ export function LandingPage({ onStart }: LandingPageProps) {
                     </span>
                   </Button>
                   <Button
+                    onClick={() => { if (typeof onOpenNumeric === 'function') onOpenNumeric(); }}
                     variant="outline"
                     size="lg"
                     className="backdrop-blur-xl bg-white/5 border-white/10 text-white hover:bg-white/10 px-8 py-6 text-lg"

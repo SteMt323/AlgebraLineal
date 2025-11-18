@@ -695,6 +695,10 @@ export function Calculator({ onBack }: CalculatorProps) {
           >
             <VectorsSection
               vectorA={vectorA}
+              vectorB={vectorB}
+              dimensionVectorB={dimensionVectorB}
+              vectorErrorsB={vectorErrorsB}
+              onDimensionVectorBChange={(d) => { setDimensionVectorB(d); const newVector = Array(d).fill(0); setVectorB(newVector); setVectorErrorsB({}); setSelectedVectorCell(null); }}
               dimensionVectorA={dimensionVectorA}
               selectedVectorCell={selectedVectorCell}
               setSelectedVectorCell={setSelectedVectorCell}
