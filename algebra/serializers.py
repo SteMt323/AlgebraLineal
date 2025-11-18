@@ -216,3 +216,12 @@ class ErrorAccumulationSerializer(serializers.Serializer):
         if value < 0:
             raise serializers.ValidationError("initial_amount debe ser >= 0")
         return value
+    
+
+class AbsRelErrorSerializer(serializers.Serializer):
+    true_value = serializers.DecimalField(max_digits=30, decimal_places=12)
+    approx_value = serializers.DecimalField(max_digits=30, decimal_places=12)
+    decimals_display = serializers.IntegerField(default=6, min_value=0, max_value=12)
+
+    def validate(self, attrs):
+        return attrs

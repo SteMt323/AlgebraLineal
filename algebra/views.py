@@ -12,6 +12,7 @@ from .serializers import (
     VectorOperateSerializer,
     MatrixOperateSerializer,
     ErrorAccumulationSerializer,
+    AbsRelErrorSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 from .algorithms.matrix.determinants.determinant_api import determinant_api
@@ -22,6 +23,7 @@ from .algorithms.vectors.vectors_comb_api import linear_combination_api
 from .algorithms.vectors.vectors_operations_api import vector_ops_api
 from .algorithms.matrix.matrix_api import matrix_ops_api
 from .algorithms.numericMethods.error_accumulation import accumulate_error_iterations
+from .algorithms.numericMethods.abs_rel_error import compute_abs_rel_error
 
 logger = logging.getLogger("algebra")
 # Create your views here.
@@ -151,5 +153,23 @@ class ErrorAccumulationView(APIView):
             # Convertir Decimals en str para JSON seguro (o deja números; DRF convertirá Decimals a strings por defecto)
             # Aquí devolvemos los Decimals tal cual; DRF serializa Decimal a string en JSON.
             return Response({"input": {"initial_amount": str(initial_amount), "iterations": iterations, "mode": mode, "rate": str(rate)}, "data": result}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "COMPUTATION_ERROR", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AbsRelErrorView(APIView):
+    def post(self, request):
+        s = AbsRelErrorSerializer(data=request.data)
+        if not s.is_valid():
+            return Response({"error": "VALIDATION_ERROR", "details": s.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = s.validated_data
+        true_value: Decimal = data['true_value']
+        approx_value: Decimal = data['approx_value']
+        decimals_display: int = data.get('decimals_display', 6)
+
+        try:
+            res = compute_abs_rel_error(true_value=true_value, approx_value=approx_value, decimals_display=decimals_display)
+            return Response(res, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "COMPUTATION_ERROR", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
