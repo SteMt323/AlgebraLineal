@@ -4,11 +4,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render
 
+from decimal import Decimal
+
 from .serializers import (
     MatrixReduceSerializer,
     VectorCombinationSerializer,
     VectorOperateSerializer,
     MatrixOperateSerializer,
+    ErrorAccumulationSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 from .algorithms.matrix.determinants.determinant_api import determinant_api
@@ -18,6 +21,7 @@ from .algorithms.reduce.gauss import gauss_api
 from .algorithms.vectors.vectors_comb_api import linear_combination_api
 from .algorithms.vectors.vectors_operations_api import vector_ops_api
 from .algorithms.matrix.matrix_api import matrix_ops_api
+from .algorithms.numericMethods.error_accumulation import accumulate_error_iterations
 
 logger = logging.getLogger("algebra")
 # Create your views here.
@@ -117,3 +121,35 @@ class MatrixDeterminantView(APIView):
             return Response(res, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": {"code": "DETERMINANT_ERROR", "message": str(e)}}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+## VISTAS DE MÉTODOS NUMÉRICOS ##
+
+class ErrorAccumulationView(APIView):
+    def post(self, request):
+        s = ErrorAccumulationSerializer(data=request.data)
+        if not s.is_valid():
+            return Response({"error": "VALIDATION_ERROR", "details": s.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = s.validated_data
+        initial_amount: Decimal = data['initial_amount']
+        iterations: int = data['iterations']
+        mode: str = data['mode']
+        rate: Decimal = data.get('rate', Decimal("0.0625"))
+        approx_decimals: int = data.get('approx_decimals', 2)
+        interest_display_decimals: int = data.get('interest_display_decimals', 4)
+
+        try:
+            result = accumulate_error_iterations(
+                initial_amount=initial_amount,
+                iterations=iterations,
+                mode=mode,
+                rate=rate,
+                approx_decimals=approx_decimals,
+                interest_display_decimals=interest_display_decimals
+            )
+            # Convertir Decimals en str para JSON seguro (o deja números; DRF convertirá Decimals a strings por defecto)
+            # Aquí devolvemos los Decimals tal cual; DRF serializa Decimal a string en JSON.
+            return Response({"input": {"initial_amount": str(initial_amount), "iterations": iterations, "mode": mode, "rate": str(rate)}, "data": result}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "COMPUTATION_ERROR", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

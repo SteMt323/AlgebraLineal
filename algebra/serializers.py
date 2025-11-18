@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from decimal import Decimal, InvalidOperation
 class MatrixReduceSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=['gauss', 'gauss-jordan'])
     A = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()), required=False)
@@ -200,3 +200,19 @@ class MatrixDeterminantSerializer(serializers.Serializer):
         if len(A) != len(A[0]):
             raise serializers.ValidationError("La matriz A debe ser cuadrada para calcular el determinante.")
         return data
+
+
+
+## SERIALIZADORES DE METODOS NUMÉRICOS ##
+class ErrorAccumulationSerializer(serializers.Serializer):
+    initial_amount = serializers.DecimalField(max_digits=20, decimal_places=6)  # admite hasta 4 decimales en input
+    iterations = serializers.IntegerField(min_value=1)
+    mode = serializers.ChoiceField(choices=['trunc', 'round'])
+    rate = serializers.DecimalField(max_digits=10, decimal_places=6, required=False, default=Decimal("0.0625"))
+    approx_decimals = serializers.IntegerField(default=2, min_value=0, max_value=6)
+    interest_display_decimals = serializers.IntegerField(default=4, min_value=0, max_value=6)
+
+    def validate_initial_amount(self, value):
+        if value < 0:
+            raise serializers.ValidationError("initial_amount debe ser >= 0")
+        return value
