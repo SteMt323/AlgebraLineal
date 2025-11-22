@@ -107,9 +107,9 @@ export function LandingPage({ onStart, onOpenNumeric }: LandingPageProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  Álgebra Lineal
+                  &lt;Álgebra Lineal
                   <span className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-                    MunguiaCore
+                    &nbsp;&nbsp;&nbsp;Munguia Core&gt;
                   </span>
                 </motion.h1>
 

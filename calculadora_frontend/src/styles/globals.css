@@ -6,6 +6,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* KaTeX CSS for math rendering */
+@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');
+
 :root {
   --font-size: 16px;
   --background: #ffffff;
@@ -187,4 +190,46 @@ body {
 
 html {
   font-size: var(--font-size);
+}
+
+/* Custom math field styles for empty and active fields */
+.math-field-empty {
+  border: 2px dashed rgba(156, 163, 175, 0.5) !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+  background: rgba(156, 163, 175, 0.1) !important;
+  display: inline-block !important;
+  min-width: 20px !important;
+}
+
+.math-field-active {
+  border: 2px dashed rgba(147, 51, 234, 0.8) !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+  background: rgba(147, 51, 234, 0.2) !important;
+  display: inline-block !important;
+  min-width: 20px !important;
+  animation: pulse-field 1.5s ease-in-out infinite !important;
+}
+
+.math-cursor {
+  color: rgb(96, 165, 250) !important;
+  animation: blink-cursor 1s step-end infinite !important;
+  margin: 0 2px !important;
+}
+
+@keyframes blink-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes pulse-field {
+  0%, 100% { 
+    border-color: rgba(147, 51, 234, 0.8) !important;
+    background: rgba(147, 51, 234, 0.2) !important;
+  }
+  50% { 
+    border-color: rgba(147, 51, 234, 1) !important;
+    background: rgba(147, 51, 234, 0.3) !important;
+  }
 }
