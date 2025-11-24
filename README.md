@@ -1,4 +1,6 @@
-
+<h1 align="center">
+  <img src="https://img.shields.io/badge/ÁLGEBRA_LINEAL-MUNGUIA_CORE-800080?style=for-the-badge&logo=github&logoColor=white">
+</h1>
 ---
 
 # Calculadora MUNGUIA_CORE
@@ -195,3 +197,5 @@ Proyecto de uso académico.
     <span style="background-color:#f0f0f0; padding:4px 8px; border-radius:6px;">THEGABOALE</span>
   </a>
 </p>
+
+
