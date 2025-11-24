@@ -90,7 +90,7 @@ export function isInsideEmptyField(expression: string, position: number): boolea
     return false;
 }
 
-export function navigationLeft(expression: string, currentPostion: number): number {
+export function navigateLeft(expression: string, currentPostion: number): number {
     if (currentPostion === 0) return 0;
 
     if (isInsideEmptyField(expression, currentPostion)) {
@@ -135,19 +135,19 @@ export function navigateRight(expression: string, currentPostion: number): numbe
     return currentPostion + 1;
 }
 
-export function insertAtCursor(expression: string, cursorPosition: number, text: string):{ newExpression: string; newCursorPosition: number } {
+export function insertAtCursor(expression: string, cursorPosition: number, text: string):{ newExpression: string; newPosition: number } {
     if (isInsideEmptyField(expression, cursorPosition)) {
         const newExpression = expression.slice(0, cursorPosition - 1) + '{' + text + '}' + expression.slice(cursorPosition + 1);
         return {
             newExpression,
-            newCursorPosition: cursorPosition + text.length,
+            newPosition: cursorPosition + text.length,
         };
     }
 
     const newExpression = expression.slice (0, cursorPosition) + text + expression.slice(cursorPosition);
     return {
         newExpression,
-        newCursorPosition: cursorPosition + text.length,
+        newPosition: cursorPosition + text.length,
     }
 }
 
