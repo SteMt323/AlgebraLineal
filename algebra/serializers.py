@@ -225,3 +225,19 @@ class AbsRelErrorSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         return attrs
+
+
+class PropagationErrorSerializer(serializers.Serializer):
+    function_latex = serializers.CharField(
+        help_text = "Entrada no valida"
+    )
+    x0 = serializers.DecimalField(max_digits=30, decimal_places=10)
+    delta_x = serializers.DecimalField(max_digits=30, decimal_places=10)
+    angle_mode = serializers.ChoiceField(
+        choices=[("rad", "rad"), ("deg", "deg")],
+        default="rad",
+        required=False
+    )
+    decimals = serializers.IntegerField(
+        default=6, min_value=0, max_value=12, required=False
+    )

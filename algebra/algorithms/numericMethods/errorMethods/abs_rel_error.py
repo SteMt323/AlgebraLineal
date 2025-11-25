@@ -23,7 +23,7 @@ def compute_abs_rel_error(
     # Preparar absolute_error según estructura solicitada
     absolute_error = {
         "operation": {
-            "numerator": "m - m~"
+            "numerator": "xr - x"
         },
         "formula": {
             "numerator": f"{_fmt(m, decimals_display)} - {_fmt(m_tilde, decimals_display)}"
@@ -33,8 +33,8 @@ def compute_abs_rel_error(
     if m == Decimal("0"):
         relative_error = {
             "operation": {
-                "numerator": "m - m~",
-                "denominator": "m"
+                "numerator": "xr - x",
+                "denominator": "x"
             },
             "formula": {
                 "numerator": f"{_fmt(m, decimals_display)} - {_fmt(m_tilde, decimals_display)}",
@@ -47,8 +47,8 @@ def compute_abs_rel_error(
         er: Decimal = (ea / m).quantize(Decimal(1).scaleb(-decimals_display), rounding=ROUND_HALF_UP)
         relative_error = {
             "operation": {
-                "numerator": "m - m~",
-                "denominator": "m"
+                "numerator": "xr - x",
+                "denominator": "x"
             },
             "formula": {
                 "numerator": f"{_fmt(m, decimals_display)} - {_fmt(m_tilde, decimals_display)}",

@@ -7,6 +7,7 @@ from .views import (
     VectorOperateView,
     ErrorAccumulationView,
     AbsRelErrorView,
+    PropagationErrorView,
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path("vectors/operate", VectorOperateView.as_view(), name="vectors-operate"),
     path("numeric/error-accumulation", ErrorAccumulationView.as_view(), name="error-accumulation"),
     path("numeric/abs-rel-error", AbsRelErrorView.as_view(), name="abs-rel-error"),
+    path("numeric/propagation-error", PropagationErrorView.as_view(), name="propagation-error"),
 ]

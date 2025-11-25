@@ -13,17 +13,26 @@ from .serializers import (
     MatrixOperateSerializer,
     ErrorAccumulationSerializer,
     AbsRelErrorSerializer,
+    PropagationErrorSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
-from .algorithms.matrix.determinants.determinant_api import determinant_api
 
+# REDUCE API
 from .algorithms.reduce.gauss_jordan import gauss_jordan_api
 from .algorithms.reduce.gauss import gauss_api
+
+# VECOTR API
 from .algorithms.vectors.vectors_comb_api import linear_combination_api
 from .algorithms.vectors.vectors_operations_api import vector_ops_api
+
+# MATRIX API
 from .algorithms.matrix.matrix_api import matrix_ops_api
-from .algorithms.numericMethods.error_accumulation import accumulate_error_iterations
-from .algorithms.numericMethods.abs_rel_error import compute_abs_rel_error
+from .algorithms.matrix.determinants.determinant_api import determinant_api
+
+# ERROR API
+from .algorithms.numericMethods.errorMethods.error_accumulation import accumulate_error_iterations
+from .algorithms.numericMethods.errorMethods.abs_rel_error import compute_abs_rel_error
+from .algorithms.numericMethods.errorMethods.propagation_error import propagation_error_api
 
 logger = logging.getLogger("algebra")
 # Create your views here.
@@ -173,3 +182,28 @@ class AbsRelErrorView(APIView):
             return Response(res, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": "COMPUTATION_ERROR", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class PropagationErrorView(APIView):
+    def post(self, request, *args, **kwargs):                           #    POST /api/v1/numerical/propagation-error/                      
+        s = PropagationErrorSerializer(data=request.data)               #    Calcula:
+        if not s.is_valid():                                            #       - f'(x0)
+            return Response(                                            #       - Δy_aprox ≈ f'(x0)·Δx
+                {"error": "VALIDATION_ERROR", "details": s.errors},     #       - Δy_real = f(x0 + Δx) - f(x0)
+                status=status.HTTP_400_BAD_REQUEST,                     #       - error absoluto |Δy_real - Δy_aprox|
+            )
+
+        data = s.validated_data
+        try:
+            res = propagation_error_api(
+                function_latex=data["function_latex"],
+                x0=float(data["x0"]),
+                delta_x=float(data["delta_x"]),
+                angle_mode=data.get("angle_mode", "rad"),
+                decimals=data.get("decimals", 6),
+            )
+            return Response(res, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": "COMPUTATION_ERROR", "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
