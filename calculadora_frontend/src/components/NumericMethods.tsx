@@ -2,17 +2,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calculator as CalcIcon, Triangle } from 'lucide-react';
 import { Button } from './ui/button';
-import { DigitalKeyboard } from './DigitalKeyboard';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { ErrorAcumuladoInputs } from './inputs/ErrorAcumuladoInputs';
 import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { OperationSelector } from './OperationSelector';
 
 interface NumericMethodsProps {
   onBack?: () => void;
 }
 
 export function NumericMethods({ onBack }: NumericMethodsProps) {
-  const [selectedOp, setSelectedOp] = React.useState<'acumulado' | 'absoluto_relativo'>('acumulado');
+  const [selectedOp, setSelectedOp] = React.useState<string>('acumulado');
+
+  const errorOperations = [
+    { id: 'acumulado', label: 'Error Acumulado', icon: CalcIcon, description: 'Cálculo del error acumulado por iteraciones' },
+    { id: 'absoluto_relativo', label: 'Error Absoluto y Relativo', icon: Triangle, description: 'Cálculo de error absoluto y relativo' },
+  ];
+  const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
     <div className="min-h-screen relative overflow-hidden p-4 md:p-8">
       <div className="absolute inset-0 opacity-5" style={{
@@ -42,19 +48,17 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
               <div className="text-sm font-semibold text-blue-200 mb-4">Calculadora de Métodos Numéricos</div>
 
               <div className="mb-4">
-                <Tabs value={selectedOp} onValueChange={(v) => setSelectedOp(v as 'acumulado' | 'absoluto_relativo')} className="w-full">
-                  <TabsList className="grid w-full mx-auto grid-cols-2 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
-                    <TabsTrigger value="acumulado" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
-                      <CalcIcon className="w-4 h-4 mr-2" />
-                      Error Acumulado
-                    </TabsTrigger>
-
-                    <TabsTrigger value="absoluto_relativo" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 text-base">
-                      <Triangle className="w-4 h-4 mr-2" />
-                      Error Absoluto y Relativo
+                <Tabs value={topTab} onValueChange={(v) => setTopTab(v)} className="w-full">
+                  <TabsList className="grid w-full mx-auto grid-cols-1 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
+                    <TabsTrigger value="calculo_errores" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
+                      Cálculo de errores
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
+              </div>
+
+              <div className="mb-4">
+                <OperationSelector operations={errorOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
               </div>
 
               {/* Render selected operation inputs */}
@@ -72,13 +76,7 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
             </motion.div>
           </div>
 
-          {/* Right column: keyboard placeholder */}
-          <div className="lg:col-span-1">
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="text-sm font-semibold text-blue-200 mb-3">Teclado</div>
-              <DigitalKeyboard onKeyPress={() => { /* placeholder: keyboard will be wired to inputs later */ }} selectedCell={null} />
-            </div>
-          </div>
+          {/* Right column removed for NumericMethods (no digital keyboard) */}
         </div>
       </div>
     </div>
