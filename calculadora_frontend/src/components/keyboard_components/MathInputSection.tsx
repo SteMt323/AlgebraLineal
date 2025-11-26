@@ -13,7 +13,7 @@ import {
     findPreviousEmptyField 
 }   from '../../utils/mathInputHelper';
 
-type KeyboardCategory = 'basic' | 'functions' | 'trigonometry' | 'calculus';
+type KeyboardCategory = 'basic' | 'functions' | 'trigonometry' | 'calculus' | 'letters';
 
 interface MathKey {
     label: string;
@@ -26,6 +26,7 @@ const categoryName: Record<KeyboardCategory, string> = {
     functions: 'Funciones',
     trigonometry: 'Trigonometria',
     calculus: 'Cálculo',
+    letters: 'Letras'
 }
 
 const mathKeys: MathKey[] = [
@@ -45,10 +46,10 @@ const mathKeys: MathKey[] = [
     { label: '3', latex: '3', category: 'basic' },
     { label: '=', latex: '=', category: 'basic' },
     { label: '(', latex: '(', category: 'basic' },
+    { label: ')', latex: ')', category: 'basic' },
     { label: '0', latex: '0', category: 'basic' },
     { label: '.', latex: '.', category: 'basic' },
     { label: ',', latex: ',', category: 'basic' },
-    { label: ')', latex: ')', category: 'basic' },
     { label: 'π', latex: '\\pi', category: 'basic' },
 
     // Functions
@@ -116,6 +117,33 @@ const mathKeys: MathKey[] = [
     { label: 'ℂ', latex: '\\mathbb{C}', category: 'calculus' },
     { label: '∅', latex: '\\emptyset', category: 'calculus' },
     { label: '∪', latex: '\\cup', category: 'calculus' },
+
+    // Letters
+    { label: 'a', latex: 'a', category: 'letters' },
+    { label: 'b', latex: 'b', category: 'letters' },
+    { label: 'c', latex: 'c', category: 'letters' },
+    { label: 'd', latex: 'd', category: 'letters' },
+    { label: 'e', latex: 'e', category: 'letters' },
+    { label: 'f', latex: 'f', category: 'letters' },
+    { label: 'g', latex: 'g', category: 'letters' },
+    { label: 'h', latex: 'h', category: 'letters' },
+    { label: 'i', latex: 'i', category: 'letters' },
+    { label: 'j', latex: 'j', category: 'letters' },
+    { label: 'k', latex: 'k', category: 'letters' },
+    { label: 'm', latex: 'm', category: 'letters' },
+    { label: 'n', latex: 'n', category: 'letters' },
+    { label: 'o', latex: 'o', category: 'letters' },
+    { label: 'p', latex: 'p', category: 'letters' },
+    { label: 'q', latex: 'q', category: 'letters' },
+    { label: 'r', latex: 'r', category: 'letters' },
+    { label: 's', latex: 's', category: 'letters' },
+    { label: 't', latex: 't', category: 'letters' },
+    { label: 'u', latex: 'u', category: 'letters' },
+    { label: 'v', latex: 'v', category: 'letters' },
+    { label: 'w', latex: 'w', category: 'letters' },
+    { label: 'x', latex: 'x', category: 'letters' },
+    { label: 'y', latex: 'y', category: 'letters' },
+    { label: 'z', latex: 'z', category: 'letters' },
 ]
 
 

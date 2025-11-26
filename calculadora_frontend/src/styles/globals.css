@@ -1,3 +1,5 @@
+@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');
+
 /* Tailwind base/components/utilities directives are required so that
   `@layer base` / `@apply` rules below are recognized by Tailwind. */
 @tailwind base;
@@ -5,9 +7,6 @@
 @tailwind utilities;
 
 @custom-variant dark (&:is(.dark *));
-
-/* KaTeX CSS for math rendering */
-@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');
 
 :root {
   --font-size: 16px;

@@ -12,70 +12,71 @@ export function MathExpressionEditor({ expression, cursorPosition, onCursorClick
 
     useEffect(() => {
         if (containerRef.current) {
-            containerRef.current.innerHTML = '<span class="text-gray-500 text-xl">Presiona las teclas para comenzar...</span>';
-            return;
-        }
-
-        try {
-            let processedExpression = expression;
-            let cursorInserted = false;
-
-            const emptyFieldPositions: number[] = [];
-            for (let i = 0; i <= expression.length - 1; i++) {
-                if (expression[i] === '{' && expression[i + 1] === '}'){
-                    emptyFieldPositions.push(i+1);
-                }
+            if (!expression) {
+                containerRef.current.innerHTML = '<span class="text-gray-500 text-xl">Presiona las teclas para comenzar...</span>';
+                return;
             }
+            try {
+                let processedExpression = expression;
+                let cursorInserted = false;
 
-            let offset = 0;
-            emptyFieldPositions.forEach((pos, index) => {
-                const adjustedPos = pos + offset - 1;
-                const isActive = cursorPosition === pos;
-
-                const marker = isActive ? `{\\text{XACTIVEX${index}}}` : `{\\text{XEMPTYX${index}}}`;
-                processedExpression = processedExpression.slice(offset, adjustedPos) + marker + processedExpression.slice(adjustedPos + 2);
-
-                offset += marker.length -2;
-                if (isActive){
-                    cursorInserted = true;
+                const emptyFieldPositions: number[] = [];
+                for (let i = 0; i <= expression.length - 1; i++) {
+                    if (expression[i] === '{' && expression[i + 1] === '}'){
+                        emptyFieldPositions.push(i+1);
+                    }
                 }
-            });
 
-            if (!cursorInserted) {
-                const adjustedCursor = cursorPosition + (processedExpression.length - expression.length);
-                processedExpression = processedExpression.slice(0, adjustedCursor) + `{\\text{XCURSORX}}` + processedExpression.slice(adjustedCursor);
-            }
+                let offset = 0;
+                emptyFieldPositions.forEach((pos, index) => {
+                    const adjustedPos = pos + offset - 1;
+                    const isActive = cursorPosition === pos;
 
-            const tempDiv = document.createElement('div');
-            katex.render(processedExpression, tempDiv, {
-                throwOnError: false,
-                displayMode: true,
-            });
+                    const marker = isActive ? `{\\text{XACTIVEX${index}}}` : `{\\text{XEMPTYX${index}}}`;
+                    processedExpression = processedExpression.slice(offset, adjustedPos) + marker + processedExpression.slice(adjustedPos + 2);
 
-            // Obtener HTML renderizado
-            let renderedHTML = tempDiv.innerHTML;
+                    offset += marker.length -2;
+                    if (isActive){
+                        cursorInserted = true;
+                    }
+                });
 
-            // Reemplazar marcadores con HTML personalizado
-            // Campos activos
-            renderedHTML = renderedHTML.replace(/XACTIVEX\d+/g, 
-                '<span class="math-field-active-inline"><span class="math-cursor-inline">|</span></span>'
-            );
+                if (!cursorInserted) {
+                    const adjustedCursor = cursorPosition + (processedExpression.length - expression.length);
+                    processedExpression = processedExpression.slice(0, adjustedCursor) + `{\\text{XCURSORX}}` + processedExpression.slice(adjustedCursor);
+                }
 
-            // Campos vacíos
-            renderedHTML = renderedHTML.replace(/XEMPTYX\d+/g, 
-                '<span class="math-field-empty-inline">&nbsp;</span>'
-            );
+                const tempDiv = document.createElement('div');
+                katex.render(processedExpression, tempDiv, {
+                    throwOnError: false,
+                    displayMode: true,
+                });
 
-            // Cursor solo
-            renderedHTML = renderedHTML.replace(/XCURSORX/g, 
-                '<span class="math-cursor-inline">|</span>'
-            );
+                // Obtener HTML renderizado
+                let renderedHTML = tempDiv.innerHTML;
 
-            containerRef.current.innerHTML = renderedHTML;
-        } catch (error) {
-            console.error('Error renmdering math:', error);
-            if (containerRef.current) {
-                containerRef.current.textContent = expression;
+                // Reemplazar marcadores con HTML personalizado
+                // Campos activos
+                renderedHTML = renderedHTML.replace(/XACTIVEX\d+/g, 
+                    '<span class="math-field-active-inline"><span class="math-cursor-inline">|</span></span>'
+                );
+
+                // Campos vacíos
+                renderedHTML = renderedHTML.replace(/XEMPTYX\d+/g, 
+                    '<span class="math-field-empty-inline">&nbsp;</span>'
+                );
+
+                // Cursor solo
+                renderedHTML = renderedHTML.replace(/XCURSORX/g, 
+                    '<span class="math-cursor-inline">|</span>'
+                );
+
+                containerRef.current.innerHTML = renderedHTML;
+            } catch (error) {
+                console.error('Error renmdering math:', error);
+                if (containerRef.current) {
+                    containerRef.current.textContent = expression;
+                }
             }
         }
     }, [expression, cursorPosition]);
