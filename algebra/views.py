@@ -14,6 +14,7 @@ from .serializers import (
     ErrorAccumulationSerializer,
     AbsRelErrorSerializer,
     PropagationErrorSerializer,
+    BisectionSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 
@@ -34,8 +35,11 @@ from .algorithms.numericMethods.errorMethods.error_accumulation import accumulat
 from .algorithms.numericMethods.errorMethods.abs_rel_error import compute_abs_rel_error
 from .algorithms.numericMethods.errorMethods.propagation_error import propagation_error_api
 
+# CLOSE METHODS
+from .algorithms.numericMethods.closeMethods.bisection import bisection_method
+
 logger = logging.getLogger("algebra")
-# Create your views here.
+
 
 class MatrixReduceView(APIView):
     def post(self, request):
@@ -207,3 +211,26 @@ class PropagationErrorView(APIView):
                 {"error": "COMPUTATION_ERROR", "message": str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+
+class BisectionView(APIView):
+    def post(self, request):
+        serializer = BisectionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        data = serializer.validated_data
+
+        result = bisection_method(
+            expr=data["expr"],
+            x_symbol=data["x_symbol"],
+            xi=data["xi"],
+            xu=data["xu"],
+            tol=data["tolerance"],
+            max_iter=data.get("max_iterations"),
+        )
+
+        return Response({"ok": True, "data": result}, status=status.HTTP_200_OK)

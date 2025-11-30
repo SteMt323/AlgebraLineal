@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, List, Tuple, Dict, Optional
-from ..utils import(
+from ...utils.algebraic_support import(
     Matrix, Number, TOL, isclose, to_augmented, shape, 
     normalize_neg_zero, log_init, log_pivot, log_swap_rows, 
     log_row_op, log_upper, log_rref, format_number, clone_with,

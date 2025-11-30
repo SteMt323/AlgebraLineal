@@ -7,7 +7,7 @@ from .crammer import (
     determinant_cramer,
     validate_determinant_properties,
 )
-from algebra.algorithms.utils import format_number, matrix_as_fraction
+from algebra.utils.algebraic_support import format_number, matrix_as_fraction
 
 
 def determinant_api(*, A: List[List[float]], method: str = "cofactors", options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

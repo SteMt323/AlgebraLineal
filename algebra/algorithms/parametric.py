@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Any, Dict, List 
-from .utils import (
+from ..utils.algebraic_support import (
     isclose, format_number, shape,
     clone_with, TOL 
 )
 
-from .utils import format_number
+from ..utils.algebraic_support import format_number
 from ..Constants.subDigits import SUBDIGITS
 
 def xsub(i: int) ->str:

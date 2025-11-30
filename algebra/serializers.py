@@ -1,5 +1,10 @@
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
+from sympy import lambdify
+from utils.latex_parser import (
+    latex_to_sympy_expr_for_bisection,
+    LatexParsingError,
+)
 class MatrixReduceSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=['gauss', 'gauss-jordan'])
     A = serializers.ListField(child=serializers.ListField(child=serializers.FloatField()), required=False)
@@ -241,3 +246,66 @@ class PropagationErrorSerializer(serializers.Serializer):
     decimals = serializers.IntegerField(
         default=6, min_value=0, max_value=12, required=False
     )
+
+
+class BisectionSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+    xi = serializers.FloatField()
+    xu = serializers.FloatField()
+    tolerance = serializers.FloatField()
+    max_iterations = serializers.IntegerField(requiered = False, min_value = 1)
+
+    def validate(self, data):
+        xi = data["xi"]
+        xu = data["xu"]
+        tol = data["tolerance"]
+
+        if xi >= xu:
+            raise serializers.ValidationError(
+                {"interval": "Se requiere xi < xu para definir el intervalo inicial."}
+            )
+        if tol <= 0:
+            raise serializers.ValidationError(
+                {"tolerance": "La tolerancia debe ser un número positivo."}
+            )
+
+        # ---- Parseo LaTeX → SymPy con restricciones de bisección ----
+        try:
+            expr, x_symbol = latex_to_sympy_expr_for_bisection(
+                data["function_latex"]
+            )
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex": str(e)})
+
+        data["expr"] = expr
+        data["x_symbol"] = x_symbol
+
+        # ---- Comprobar cambio de signo en el intervalo ----
+        f = lambdify(x_symbol, expr, "math")
+        try:
+            fa = float(f(xi))
+            fb = float(f(xu))
+        except Exception:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "No se pudo evaluar f(x) en los extremos del intervalo. "
+                        "Revisa que la expresión sea válida numéricamente en xi y xu."
+                    )
+                }
+            )
+
+        if fa * fb > 0:
+            raise serializers.ValidationError(
+                {
+                    "interval": (
+                        "El intervalo [xi, xu] no es válido para bisección: "
+                        "f(xi)·f(xu) > 0 (no hay cambio de signo)."
+                    )
+                }
+            )
+
+        data["f_xi"] = fa
+        data["f_xu"] = fb
+
+        return data

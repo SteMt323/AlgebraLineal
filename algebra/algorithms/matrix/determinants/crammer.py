@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from algebra.Constants.properties import DETERMINANT_PROPERTIES
 
-from algebra.algorithms.utils import (
+from algebra.utils.algebraic_support import (
     isclose, format_number, shape, clone_with, TOL, 
     det_steps_init, log_det_init, log_sarrus_extended,
     log_sarrus_diag, log_det_result, log_cofactor_minor, log_subdet_2x2, 

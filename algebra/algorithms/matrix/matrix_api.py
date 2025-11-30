@@ -5,7 +5,7 @@ from algebra.algorithms.matrix.matrix_operations import (
     add_matrices, sub_matrices, scalar_mult, transpose, matmul,
     sum_many, sub_many, matmul_chain, inverse)
 
-from ..utils import matrix_as_fraction, format_number
+from ...utils.algebraic_support import matrix_as_fraction, format_number
 
 Number = float
 Matrix = List[List[Number]]

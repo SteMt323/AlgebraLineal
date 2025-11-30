@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
-from ..utils import isclose, TOL, format_number
+from ...utils.algebraic_support import isclose, TOL, format_number
 from ..reduce.gauss_jordan import gauss_jordan_api
 
 Number = float

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
-from ..utils import (
+from ...utils.algebraic_support import (
     isclose, format_number, matrix_as_fraction, shape, normalize_neg_zero, clone_with, TOL
 )
 

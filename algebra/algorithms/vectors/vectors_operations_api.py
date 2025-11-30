@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
-from ..utils import format_number
+from ...utils.algebraic_support import format_number
 
 Number = float
 Vec = List[Number]

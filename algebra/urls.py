@@ -8,6 +8,8 @@ from .views import (
     ErrorAccumulationView,
     AbsRelErrorView,
     PropagationErrorView,
+    BisectionView,
+
 )
 
 urlpatterns = [
@@ -19,4 +21,5 @@ urlpatterns = [
     path("numeric/error-accumulation", ErrorAccumulationView.as_view(), name="error-accumulation"),
     path("numeric/abs-rel-error", AbsRelErrorView.as_view(), name="abs-rel-error"),
     path("numeric/propagation-error", PropagationErrorView.as_view(), name="propagation-error"),
+    path("numeric/bisection-method", BisectionView.as_view(), name="bisection-method"),
 ]
