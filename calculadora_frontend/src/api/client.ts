@@ -60,4 +60,9 @@ export async function errorAbsRel(payload: { true_value: string; approx_value: s
   return res.data
 }
 
+export async function errorPropagation(payload: { function_latex: string; x0: string; delta_x: string; angle_mode?: string }) {
+  const res = await client.post('api/v1/numeric/propagation-error', payload)
+  return res.data
+}
+
 export default client

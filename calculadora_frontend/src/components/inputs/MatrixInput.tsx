@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Grid3x3 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { MatrixValue } from '../Calculator';
+import { MatrixValue } from '../AlgebraicMethods';
 
 // Small controlled number input that allows typing (empty string) and commits on blur or Enter
 function DimensionNumberInput({ value, min = 1, max = 6, onCommit, className }: { value: number; min?: number; max?: number; onCommit: (v: number) => void; className?: string }) {

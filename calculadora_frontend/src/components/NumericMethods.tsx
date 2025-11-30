@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calculator as CalcIcon, Triangle } from 'lucide-react';
+import { ArrowLeft, Calculator as CalcIcon, Triangle, Zap } from 'lucide-react';
 import { Button } from './ui/button';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { ErrorAcumuladoInputs } from './inputs/ErrorAcumuladoInputs';
 import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
+import PropagationErrorInputs from './inputs/PropagationErrorInputs';
 import { OperationSelector } from './OperationSelector';
 
 interface NumericMethodsProps {
@@ -17,6 +18,7 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
   const errorOperations = [
     { id: 'acumulado', label: 'Error Acumulado', icon: CalcIcon, description: 'Cálculo del error acumulado por iteraciones' },
     { id: 'absoluto_relativo', label: 'Error Absoluto y Relativo', icon: Triangle, description: 'Cálculo de error absoluto y relativo' },
+    { id: 'propagacion', label: 'Propagación de Error', icon: Zap, description: 'Propagación de errores mediante derivada' },
   ];
   const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
@@ -69,6 +71,13 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
 
                 {selectedOp === 'absoluto_relativo' && (
                   <ErrorAbsRelInputs onCalculate={(data) => { console.log('Error Abs/Rel', data); }} />
+                )}
+
+                {selectedOp === 'propagacion' && (
+                  <React.Suspense fallback={<div>Cargando...</div>}>
+                    {/* Lazy load to avoid increasing bundle too much */}
+                    <PropagationErrorInputs />
+                  </React.Suspense>
                 )}
               </div>
 

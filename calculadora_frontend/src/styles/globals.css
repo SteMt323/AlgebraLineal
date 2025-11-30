@@ -191,44 +191,27 @@ html {
   font-size: var(--font-size);
 }
 
-/* Custom math field styles for empty and active fields */
-.math-field-empty {
-  border: 2px dashed rgba(156, 163, 175, 0.5) !important;
-  border-radius: 4px !important;
-  padding: 2px 8px !important;
-  background: rgba(156, 163, 175, 0.1) !important;
-  display: inline-block !important;
-  min-width: 20px !important;
+/* Estilos para MathQuill - Cursor visible y animado */
+.mq-editable-field .mq-cursor {
+  border-left: 2px solid #9b8ae8 !important;
+  animation: blink 1s step-end infinite !important;
 }
 
-.math-field-active {
-  border: 2px dashed rgba(147, 51, 234, 0.8) !important;
-  border-radius: 4px !important;
-  padding: 2px 8px !important;
-  background: rgba(147, 51, 234, 0.2) !important;
-  display: inline-block !important;
-  min-width: 20px !important;
-  animation: pulse-field 1.5s ease-in-out infinite !important;
+.mq-focused .mq-cursor {
+  border-left: 2px solid #7c6fd6 !important;
 }
 
-.math-cursor {
-  color: rgb(96, 165, 250) !important;
-  animation: blink-cursor 1s step-end infinite !important;
-  margin: 0 2px !important;
-}
-
-@keyframes blink-cursor {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-@keyframes pulse-field {
-  0%, 100% { 
-    border-color: rgba(147, 51, 234, 0.8) !important;
-    background: rgba(147, 51, 234, 0.2) !important;
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
   }
-  50% { 
-    border-color: rgba(147, 51, 234, 1) !important;
-    background: rgba(147, 51, 234, 0.3) !important;
+  51%, 100% {
+    opacity: 0;
   }
+}
+
+/* Mejorar visibilidad del cursor en MathQuill */
+.mq-editable-field.mq-focused .mq-cursor {
+  visibility: visible !important;
+  display: inline-block !important;
 }

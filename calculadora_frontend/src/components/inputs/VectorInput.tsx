@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Triangle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { VectorValue } from '../Calculator';
+import { VectorValue } from '../AlgebraicMethods';
 
 function DimensionNumberInput({ value, min = 2, max = 6, onCommit, className }: { value: number; min?: number; max?: number; onCommit: (v: number) => void; className?: string }) {
   const [str, setStr] = useState(String(value));

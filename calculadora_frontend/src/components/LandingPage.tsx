@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Calculator, Grid3x3, Triangle, ArrowRight, Brain, Shield, TrendingUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRef } from 'react';
-import { MathInputSection } from './keyboard_components/MathInputSection';
+import { Calculator as Calculadora} from './Calculator';
 interface LandingPageProps {
   onStart: () => void;
   onOpenNumeric?: () => void;
@@ -286,7 +286,7 @@ export function LandingPage({ onStart, onOpenNumeric }: LandingPageProps) {
           </div>
         </motion.div>
 
-        <MathInputSection />
+        <Calculadora />
 
         {/* Footer */}
         <motion.footer

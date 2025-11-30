@@ -19,7 +19,7 @@
 
 import { useState } from 'react';
 import { LandingPage } from './components/LandingPage';
-import { Calculator } from './components/Calculator';
+import { AlgebraicMethods } from './components/AlgebraicMethods';
 import NumericMethods from './components/NumericMethods';
 
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
       {!showCalculator && !showNumeric ? (
         <LandingPage onStart={() => setShowCalculator(true)} onOpenNumeric={() => setShowNumeric(true)} />
       ) : showCalculator ? (
-        <Calculator onBack={() => setShowCalculator(false)} />
+        <AlgebraicMethods onBack={() => setShowCalculator(false)} />
       ) : (
         <NumericMethods onBack={() => setShowNumeric(false)} />
       )}
