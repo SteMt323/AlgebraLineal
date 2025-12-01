@@ -65,4 +65,9 @@ export async function errorPropagation(payload: { function_latex: string; x0: st
   return res.data
 }
 
+export async function bisectionMethod(payload: { function_latex: string; xi: number; xu: number; tolerance: number; max_iter?: number }) {
+  const res = await client.post('api/v1/numeric/bisection-method', payload)
+  return res.data
+}
+
 export default client

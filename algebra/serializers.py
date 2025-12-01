@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from decimal import Decimal, InvalidOperation
 from sympy import lambdify
-from utils.latex_parser import (
+from .utils.latex_parser import (
     latex_to_sympy_expr_for_bisection,
     LatexParsingError,
 )
@@ -253,7 +253,7 @@ class BisectionSerializer(serializers.Serializer):
     xi = serializers.FloatField()
     xu = serializers.FloatField()
     tolerance = serializers.FloatField()
-    max_iterations = serializers.IntegerField(requiered = False, min_value = 1)
+    max_iterations = serializers.IntegerField(required = False, min_value = 1)
 
     def validate(self, data):
         xi = data["xi"]

@@ -1,5 +1,9 @@
-import math 
+from __future__ import annotations
+import math
 from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
+from sympy import lambdify, latex as sympy_latex, Expr, Symbol
+
 
 @dataclass
 class BisectionIterationRow:
@@ -13,64 +17,105 @@ class BisectionIterationRow:
     yr: float
     interval_length: float
 
-def bisection_method(expr, x_symbol, xi, xu, tol, max_iter=None):
-    from sympy import lambdify, latex
 
+def bisection_method(
+    expr: Expr,
+    x_symbol: Symbol,
+    xi: float,
+    xu: float,
+    tol: float,
+    max_iter: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Implementación del método de la bisección.
+
+    Devuelve un diccionario con cuatro secciones:
+    - iterations_estimate: cálculo aproximado de número de iteraciones necesarias
+    - table: datos numéricos por iteración (para tabla)
+    - details: pasos detallados en LaTeX por iteración
+    - conclusion: interpretación final del resultado
+    """
+    # ---------- Preparar función numérica ----------
     f = lambdify(x_symbol, expr, "math")
 
-    # ---------- 1) Cálculo aproximado de número de iteraciones ----------
+    # ---------- 1) Estimación de número de iteraciones ----------
     interval_length0 = xu - xi
+    # Evitar log de número no positivo
+    if interval_length0 <= 0 or tol <= 0:
+        # Esto debería estar validado en el serializer, pero por seguridad:
+        raise ValueError("Intervalo o tolerancia inválidos para bisección.")
+
     n_est = math.log2(interval_length0 / tol)
-    n_min = math.ceil(n_est)
+    n_min = max(1, math.ceil(n_est))
 
     if max_iter is None:
         max_iter = n_min
 
-    iteration_rows = []
-    iterations_detail = []
+    iteration_rows: List[BisectionIterationRow] = []
+    iterations_detail: List[Dict[str, Any]] = []
 
-    xr_prev = None
+    xr_prev: Optional[float] = None
     a = xi
     b = xu
+    xr: Optional[float] = None
 
     for k in range(1, max_iter + 1):
         xl = a
-        xu = b
-        xr = 0.5 * (xl + xu)
+        xu_current = b
+        xr = 0.5 * (xl + xu_current)
 
         yl = float(f(xl))
-        yu = float(f(xu))
+        yu = float(f(xu_current))
         yr = float(f(xr))
 
         if xr_prev is None:
             ea = 0.0
         else:
-            ea = abs((xr - xr_prev) / xr) * 100.0
+            # error relativo porcentual
+            ea = abs((xr - xr_prev) / xr) * 100.0 if xr != 0 else 0.0
 
-        interval_length = xu - xl
+        interval_length = xu_current - xl
 
         # ---------- fila de la tabla ----------
         iteration_rows.append(
             BisectionIterationRow(
                 iteration=k,
-                xl=xl, xu=xu, xr=xr,
+                xl=xl,
+                xu=xu_current,
+                xr=xr,
                 ea=ea,
-                yl=yl, yu=yu, yr=yr,
+                yl=yl,
+                yu=yu,
+                yr=yr,
                 interval_length=interval_length,
             )
         )
 
-        # ---------- detalle en LaTeX de esta iteración ----------
-        detail_latex = _build_iteration_latex(
-            k, expr, xl, xu, xr, yl, yu, yr, ea, xr_prev is None
+        # ---------- detalle LaTeX por iteración ----------
+        detail_lines = _build_iteration_latex_lines(
+            k,
+            expr,
+            xl,
+            xu_current,
+            xr,
+            yl,
+            yu,
+            yr,
+            ea,
+            is_first=(xr_prev is None),
         )
-        iterations_detail.append(detail_latex)
+        iterations_detail.append(
+            {
+                "iteration": k,
+                "lines": detail_lines,
+            }
+        )
 
-        # criterio de paro por longitud del intervalo
+        # Criterio de paro por longitud del intervalo
         if interval_length < tol:
             break
 
-        # test de cambio de signo para actualizar [a,b]
+        # Actualizar intervalo según el cambio de signo
         if yl * yr < 0:
             # raíz en [xl, xr]
             b = xr
@@ -79,6 +124,10 @@ def bisection_method(expr, x_symbol, xi, xu, tol, max_iter=None):
             a = xr
 
         xr_prev = xr
+
+    # Si por alguna razón no hubo iteraciones
+    if xr is None:
+        raise RuntimeError("El método de bisección no produjo ninguna iteración.")
 
     root = xr
     total_iters = len(iteration_rows)
@@ -118,13 +167,12 @@ def bisection_method(expr, x_symbol, xi, xu, tol, max_iter=None):
     ]
 
     # ---------- 3ª parte: detalles de cada iteración ----------
-    # iterations_detail ya viene como lista de strings LaTeX
     details_section = iterations_detail
 
     # ---------- 4ª parte: interpretación final ----------
     conclusion_section = {
         "latex": (
-            rf"\text{{El método converge en }} {total_iters} "
+            rf"\text{{El método de bisección converge en }} {total_iters} "
             rf"\text{{ iteraciones. La raíz aproximada es }} "
             rf"x_r = {root:.6f}."
         ),
@@ -141,21 +189,40 @@ def bisection_method(expr, x_symbol, xi, xu, tol, max_iter=None):
     }
 
 
-def _build_iteration_latex(k, expr, xl, xu, xr, yl, yu, yr, ea, is_first):
-    """Construye el bloque de texto LaTeX para una iteración."""
-    from sympy import latex as sympy_latex
+def _build_iteration_latex_lines(
+    k: int,
+    expr: Expr,
+    xl: float,
+    xu: float,
+    xr: float,
+    yl: float,
+    yu: float,
+    yr: float,
+    ea: float,
+    is_first: bool,
+) -> List[str]:
+    """
+    Construye una lista de líneas LaTeX que explican la iteración k.
 
+    Cada string de la lista está pensado para ser renderizado individualmente
+    en el frontend con KaTeX/MathJax (por ejemplo, un <BlockMath /> por línea).
+    """
     f_latex = sympy_latex(expr)
-    lines = []
+    lines: List[str] = []
 
-    # OJO: llaves de LaTeX → {{ }}
+    # OJO: llaves de LaTeX → {{ }} en f-strings
     lines.append(rf"\textbf{{Iteración {k}:}}")
+
+    # Intervalo actual
     lines.append(rf"x_l = {xl:.4f},\quad x_u = {xu:.4f}")
+
+    # Cálculo de xr
     lines.append(
-        rf"x_r = \frac{{x_l + x_u}}{{2}} \Rightarrow "
-        rf"x_r = \frac{{{xl:.4f} + {xu:.4f}}}{{2}} = {xr:.4f}"
+        rf"x_r = \frac{{x_l + x_u}}{{2}} \Rightarrow x_r = "
+        rf"\frac{{{xl:.4f} + {xu:.4f}}}{{2}} = {xr:.4f}"
     )
 
+    # Error relativo
     if is_first:
         lines.append(r"E_a = 0.0000")
     else:
@@ -164,6 +231,7 @@ def _build_iteration_latex(k, expr, xl, xu, xr, yl, yu, yr, ea, is_first):
             rf" = {ea:.4f}\%"
         )
 
+    # Evaluaciones de f(x)
     lines.append(
         rf"v_l = f(x_l) = f({xl:.4f}) = {f_latex}\big|_{{x={xl:.4f}}} = {yl:+.6f}"
     )
@@ -174,10 +242,11 @@ def _build_iteration_latex(k, expr, xl, xu, xr, yl, yu, yr, ea, is_first):
         rf"v_r = f(x_r) = f({xr:.4f}) = {f_latex}\big|_{{x={xr:.4f}}} = {yr:+.6f}"
     )
 
+    # Decisión del nuevo intervalo
     if yl * yr < 0:
         lines.append(
             rf"f(x_l) f(x_r) = ({yl:+.4f})({yr:+.4f}) < 0 "
-            r"\Rightarrow \text{{la raíz está entre }}[x_l, x_r]."
+            r"\Rightarrow \text{la raíz está entre }[x_l, x_r]."
         )
         lines.append(
             rf"\text{{Nuevo intervalo: }}[x_l, x_u] \leftarrow [{xl:.4f}, {xr:.4f}]"
@@ -185,11 +254,10 @@ def _build_iteration_latex(k, expr, xl, xu, xr, yl, yu, yr, ea, is_first):
     else:
         lines.append(
             rf"f(x_l) f(x_r) = ({yl:+.4f})({yr:+.4f}) > 0 "
-            r"\Rightarrow \text{{la raíz está entre }}[x_r, x_u]."
+            r"\Rightarrow \text{la raíz está entre }[x_r, x_u]."
         )
         lines.append(
             rf"\text{{Nuevo intervalo: }}[x_l, x_u] \leftarrow [{xr:.4f}, {xu:.4f}]"
         )
 
-    # Un bloque tipo "Iteración k: ..." que luego renderizas con KaTeX
-    return r"\\[4pt]".join(lines)
+    return lines

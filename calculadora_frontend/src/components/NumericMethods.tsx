@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { ErrorAcumuladoInputs } from './inputs/ErrorAcumuladoInputs';
 import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
 import PropagationErrorInputs from './inputs/PropagationErrorInputs';
+import BisectionInputs from './inputs/BisectionInputs';
 import { OperationSelector } from './OperationSelector';
 
 interface NumericMethodsProps {
@@ -19,6 +20,9 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
     { id: 'acumulado', label: 'Error Acumulado', icon: CalcIcon, description: 'Cálculo del error acumulado por iteraciones' },
     { id: 'absoluto_relativo', label: 'Error Absoluto y Relativo', icon: Triangle, description: 'Cálculo de error absoluto y relativo' },
     { id: 'propagacion', label: 'Propagación de Error', icon: Zap, description: 'Propagación de errores mediante derivada' },
+  ];
+  const closedOperations = [
+    { id: 'biseccion', label: 'Método de Bisección', icon: CalcIcon, description: 'Búsqueda de raíz por bisección' },
   ];
   const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
@@ -45,22 +49,31 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6">
               <div className="text-sm font-semibold text-blue-200 mb-4">Calculadora de Métodos Numéricos</div>
 
               <div className="mb-4">
                 <Tabs value={topTab} onValueChange={(v) => setTopTab(v)} className="w-full">
-                  <TabsList className="grid w-full mx-auto grid-cols-1 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
+                  <TabsList className="grid w-full mx-auto grid-cols-2 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
                     <TabsTrigger value="calculo_errores" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
                       Cálculo de errores
+                    </TabsTrigger>
+                    <TabsTrigger value="metodos_cerrados" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
+                      Métodos Cerrados
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
 
               <div className="mb-4">
-                <OperationSelector operations={errorOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
+                {topTab === 'calculo_errores' && (
+                  <OperationSelector operations={errorOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
+                )}
+
+                {topTab === 'metodos_cerrados' && (
+                  <OperationSelector operations={closedOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
+                )}
               </div>
 
               {/* Render selected operation inputs */}
@@ -75,8 +88,13 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
 
                 {selectedOp === 'propagacion' && (
                   <React.Suspense fallback={<div>Cargando...</div>}>
-                    {/* Lazy load to avoid increasing bundle too much */}
                     <PropagationErrorInputs />
+                  </React.Suspense>
+                )}
+
+                {selectedOp === 'biseccion' && (
+                  <React.Suspense fallback={<div>Cargando...</div>}>
+                    <BisectionInputs />
                   </React.Suspense>
                 )}
               </div>
