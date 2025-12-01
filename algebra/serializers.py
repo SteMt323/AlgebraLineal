@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from sympy import lambdify
 from .utils.latex_parser import (
     latex_to_sympy_expr_for_bisection,
@@ -305,6 +305,60 @@ class BisectionSerializer(serializers.Serializer):
                 }
             )
 
+        data["f_xi"] = fa
+        data["f_xu"] = fb
+
+        return data
+
+class FalsePositionSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+    xi = serializers.FloatField()
+    xu = serializers.FloatField()
+    tolerance = serializers.FloatField()
+    max_iterations = serializers.IntegerField(required=False, min_value=1)
+
+    def validate(self, data):
+        xi = data["xi"]
+        xu  = data["xu"]
+        tol = data["tolerance"]
+
+        if xi >= xu:
+            raise serializers.ValidationError({"interval": "Se requiere xi < xu para definir el intervalo inicial"})
+        if tol <= 0:
+            raise serializers.ValidationError({"tolerance":"La tolerancia debe ser un numero positivo"})
+        
+        try:
+            expr, x_symbol = latex_to_sympy_expr_for_bisection(data["function_latex"])
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex":str(e)})
+        
+        data["expr"] = expr
+        data["x_symbol"] = x_symbol
+
+        f = lambdify(x_symbol, expr, "math")
+        try:
+            fa = float(f(xi))
+            fb = float(f(xu))
+        except Exception:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "No se pudo evaluar f(x) en los extremos del intervalo. "
+                        "Revise que la expresion sea valida en ambos intervalos. "
+                    )
+                }
+            )
+        
+        if fa * fb > 0:
+            raise serializers.ValidationError(
+                {
+                    "interval": (
+                        "El intervalo xi, xu no es valido para la falsa posicion: "
+                        "f(xi)·f(xu) > 0 (no hay cambio de signo)."
+                    )
+                }
+            )
+        
         data["f_xi"] = fa
         data["f_xu"] = fb
 

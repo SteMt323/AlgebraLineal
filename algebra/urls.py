@@ -9,7 +9,7 @@ from .views import (
     AbsRelErrorView,
     PropagationErrorView,
     BisectionView,
-
+    FalsePositionView,
 )
 
 urlpatterns = [
@@ -22,4 +22,5 @@ urlpatterns = [
     path("numeric/abs-rel-error", AbsRelErrorView.as_view(), name="abs-rel-error"),
     path("numeric/propagation-error", PropagationErrorView.as_view(), name="propagation-error"),
     path("numeric/bisection-method", BisectionView.as_view(), name="bisection-method"),
+    path("numeric/false-position", FalsePositionView.as_view(), name="false-position"),
 ]

@@ -15,6 +15,7 @@ from .serializers import (
     AbsRelErrorSerializer,
     PropagationErrorSerializer,
     BisectionSerializer,
+    FalsePositionSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 
@@ -37,6 +38,7 @@ from .algorithms.numericMethods.errorMethods.propagation_error import propagatio
 
 # CLOSE METHODS
 from .algorithms.numericMethods.closeMethods.bisection import bisection_method
+from .algorithms.numericMethods.closeMethods.false_position import false_position_method
 
 logger = logging.getLogger("algebra")
 
@@ -234,3 +236,25 @@ class BisectionView(APIView):
         )
 
         return Response({"ok": True, "data": result}, status=status.HTTP_200_OK)
+
+
+class FalsePositionView(APIView):
+    def post(self, request):
+        serializer = FalsePositionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors":serializer.errors}, status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        data = serializer.validated_data
+
+        result = false_position_method(
+            expr=data["expr"],
+            x_symbol=data["x_symbol"],
+            xi=data["xi"],
+            xu=data["xu"],
+            tol=data["tolerance"],
+            max_iter=data.get("max_iterations"),
+        )
+
+        return Response({"ok": True, "data":result}, status=status.HTTP_200_OK)
