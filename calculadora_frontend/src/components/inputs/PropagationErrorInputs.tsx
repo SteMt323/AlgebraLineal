@@ -44,7 +44,7 @@ export function PropagationErrorInputs() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-4">
-        <label className="text-sm text-blue-200">Función (LaTeX)</label>
+        <label className="text-sm text-blue-200">Función f(x)</label>
         <MathInput instanceKey="prop_func" onLatexChange={(l) => setFunctionLatex(l)} initialLatex={functionLatex} />
 
         <label className="text-sm text-blue-200">x₀</label>
