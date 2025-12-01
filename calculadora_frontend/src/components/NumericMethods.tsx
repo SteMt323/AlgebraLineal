@@ -7,6 +7,7 @@ import { ErrorAcumuladoInputs } from './inputs/ErrorAcumuladoInputs';
 import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
 import PropagationErrorInputs from './inputs/PropagationErrorInputs';
 import BisectionInputs from './inputs/BisectionInputs';
+import FalsePositionInputs from './inputs/FalsePositionInputs';
 import { OperationSelector } from './OperationSelector';
 
 interface NumericMethodsProps {
@@ -23,6 +24,7 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
   ];
   const closedOperations = [
     { id: 'biseccion', label: 'Método de Bisección', icon: CalcIcon, description: 'Búsqueda de raíz por bisección' },
+    { id: 'false_position', label: 'Método de Falsa Posición', icon: CalcIcon, description: 'Búsqueda de raíz por falsa posición' },
   ];
   const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
@@ -95,6 +97,12 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
                 {selectedOp === 'biseccion' && (
                   <React.Suspense fallback={<div>Cargando...</div>}>
                     <BisectionInputs />
+                  </React.Suspense>
+                )}
+
+                {selectedOp === 'false_position' && (
+                  <React.Suspense fallback={<div>Cargando...</div>}>
+                    <FalsePositionInputs />
                   </React.Suspense>
                 )}
               </div>

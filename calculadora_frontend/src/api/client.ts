@@ -70,4 +70,9 @@ export async function bisectionMethod(payload: { function_latex: string; xi: num
   return res.data
 }
 
+export async function falsePositionMethod(payload: { function_latex: string; xi: number; xu: number; tolerance: number; max_iterations?: number }) {
+  const res = await client.post('api/v1/numeric/false-position', payload)
+  return res.data
+}
+
 export default client
