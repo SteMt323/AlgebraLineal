@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+  import { motion, useScroll, useTransform } from 'framer-motion';
 import { Calculator, Grid3x3, Triangle, ArrowRight, Brain, Shield, TrendingUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRef } from 'react';
@@ -79,9 +79,8 @@ export function LandingPage({ onStart, onOpenNumeric }: LandingPageProps) {
               <span className="text-xl text-white">Munguia Core</span>
             </div>
             <nav className="hidden md:flex items-center gap-8 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Características</a>
-              <a href="#" className="hover:text-white transition-colors">Documentación</a>
-              <a href="#" className="hover:text-white transition-colors">Soporte</a>
+              <a href="https://github.com/SteMt323/AlgebraLineal.git" target='blank' className="hover:text-white transition-colors">Repositorio</a>
+              
             </nav>
           </div>
         </motion.header>
