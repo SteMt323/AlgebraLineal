@@ -117,10 +117,10 @@ export function NewtonRaphsonInputs() {
                 <div className="mt-3 flex gap-3">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="bg-gradient-to-r from-blue-600 to-purple-600">Iteraciones estimadas</Button>
+                      <Button className="bg-gradient-to-r from-blue-600 to-purple-600">Evaluaciones</Button>
                     </DialogTrigger>
                     <DialogContent className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 w-[min(1200px,96vw)] max-w-6xl max-h-[90vh] mx-auto">
-                      <DialogTitle><span className='text-gray-200'>Iteraciones estimadas</span></DialogTitle>
+                      <DialogTitle><span className='text-gray-200'>Evaluaciones</span></DialogTitle>
                       <DialogDescription>
                         <div className="mt-2 text-gray-400 pr-2 w-full">
                           <BlockMath className="w-full">{result.iterations_estimate?.latex?.formula_newton}</BlockMath>
@@ -140,10 +140,12 @@ export function NewtonRaphsonInputs() {
                     <DialogTrigger asChild>
                       <Button className="bg-gradient-to-r from-blue-600 to-purple-600">Detalles iteraciones</Button>
                     </DialogTrigger>
-                    <DialogContent className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 w-[min(1400px,98vw)] max-w-7xl max-h-[92vh] mx-auto">
+                    <DialogContent className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6
+                                                w-[75vw] max-w-[75vw] sm:max-w-[75vw]
+                                                max-h-[80vh] mx-auto overflow-hidden">
                       <DialogTitle><span className='text-gray-300'>Detalles por iteración </span></DialogTitle>
                       <DialogDescription>
-                        <div className="space-y-4 mt-2 pr-2 w-full">
+                        <div className="space-y-4 mt-2 overflow-auto max-h-[68vh] pr-2">
                           {(result.details || []).map((it: any) => (
                             <div key={it.iteration} className="p-3 bg-white/5 rounded">
                               <div className="font-semibold text-gray-300">Iteración {it.iteration}</div>
@@ -164,7 +166,9 @@ export function NewtonRaphsonInputs() {
                     <DialogTrigger asChild>
                       <Button className="bg-gradient-to-r from-blue-600 to-purple-600">Conclusión</Button>
                     </DialogTrigger>
-                    <DialogContent className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 w-[min(1100px,92vw)] max-w-4xl max-h-[76vh] mx-auto">
+                    <DialogContent className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6
+                                                w-[50vw] max-w-[50vw] sm:max-w-[50vw]
+                                                max-h-[80vh] mx-auto overflow-hidden">
                       <DialogTitle><span className='text-gray-200'>Conclusiones</span></DialogTitle>
                       <DialogDescription>
                         <div className="mt-2 text-gray-400 pr-2 w-full">
