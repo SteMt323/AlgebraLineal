@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from decimal import Decimal
-from sympy import lambdify
+from sympy import lambdify, diff
 from .utils.latex_parser import (
     latex_to_sympy_expr_for_bisection,
+    latex_to_sympy_expr,
     LatexParsingError,
 )
 class MatrixReduceSerializer(serializers.Serializer):
@@ -361,5 +362,103 @@ class FalsePositionSerializer(serializers.Serializer):
         
         data["f_xi"] = fa
         data["f_xu"] = fb
+
+        return data
+    
+
+
+class NewtonRaphsonSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+    x0 = serializers.FloatField()
+    tolerance = serializers.FloatField()
+    max_iterations = serializers.IntegerField(required=False, min_value=1)
+    derivate_mode = serializers.ChoiceField(choices=["symbolic"], required=False, default="symbolic")
+
+    def validate(self, data):
+        tol = data["tolerance"]
+        if tol <= 0:
+            raise serializers.ValidationError({"tolerance": "La tolerancia debe ser un numero positivo."})
+        
+        try:
+            expr, free_syms = latex_to_sympy_expr(data["function_latex"])
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex": str(e)})
+        
+        if not free_syms:
+            raise serializers.ValidationError({"function_latex": "La funcion debe depender de la variable x"})
+        
+        if len(free_syms) > 1:
+            raise serializers.ValidationError({
+                "function_latex": (
+                    "Para el metodo Newton-Raphson solo se permite"
+                    "una variable (x)."
+                )
+            })
+        
+        x_symbol = next(iter(free_syms))
+        if str(x_symbol) != "x":
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La variable de la funcion debe llamarse x "
+                        "(por ejemplo f(x) = x^2 - 3x + 1)"
+                    )
+                }
+            )
+        
+        mode = data.get("derivate_mode", "symbolic")
+        if mode != "symbolic":
+            raise serializers.ValidationError(
+                {
+                    "derivate_mode": (
+                        "Actualmente solo se admite symbolic para el"
+                        "calculo de la derivada"
+                    )
+                }
+            )
+        
+        fprime_expr = diff(expr, x_symbol)
+        if fprime_expr == 0:
+            raise serializers.ValidationError(
+                {
+                    "function_latex":(
+                        "La derivada simbolica de la funcion es cero. "
+                        "Newton-Raphson no es aplicable a funciones constantes."
+                    )
+                }
+            )
+        
+        f = lambdify(x_symbol, expr, "math")
+        fprime = lambdify(x_symbol, fprime_expr, "math")
+        x0 = data["x0"]
+
+        try:
+            fx0 = float(f(x0))
+            fpx0 = float(fprime(x0))
+        except Exception:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "No se pudo evaluar f(x) o f'(x) en x0. "
+                        "Revisa que la expresión sea válida numéricamente "
+                        "para el valor inicial."
+                    )
+                }
+            )
+
+        if fpx0 == 0:
+            raise serializers.ValidationError(
+                {
+                    "x0": (
+                        "La derivada en x0 es cero (f'(x0) = 0). "
+                        "Newton-Raphson no se puede aplicar con este valor inicial."
+                    )
+                }
+            )
+
+        # Guardar para la vista / algoritmo
+        data["expr"] = expr
+        data["fprime_expr"] = fprime_expr
+        data["x_symbol"] = x_symbol
 
         return data

@@ -10,6 +10,7 @@ from .views import (
     PropagationErrorView,
     BisectionView,
     FalsePositionView,
+    NewtonRaphsonView,
 )
 
 urlpatterns = [
@@ -23,4 +24,5 @@ urlpatterns = [
     path("numeric/propagation-error", PropagationErrorView.as_view(), name="propagation-error"),
     path("numeric/bisection-method", BisectionView.as_view(), name="bisection-method"),
     path("numeric/false-position", FalsePositionView.as_view(), name="false-position"),
+    path("numeric/newton-raphson", NewtonRaphsonView.as_view(), name="newton-raphson"),
 ]

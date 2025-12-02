@@ -16,6 +16,7 @@ from .serializers import (
     PropagationErrorSerializer,
     BisectionSerializer,
     FalsePositionSerializer,
+    NewtonRaphsonSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 
@@ -39,6 +40,9 @@ from .algorithms.numericMethods.errorMethods.propagation_error import propagatio
 # CLOSE METHODS
 from .algorithms.numericMethods.closeMethods.bisection import bisection_method
 from .algorithms.numericMethods.closeMethods.false_position import false_position_method
+
+# OPEN METHODS
+from .algorithms.numericMethods.openMethods.newton_raphson import newton_raphson_method
 
 logger = logging.getLogger("algebra")
 
@@ -258,3 +262,34 @@ class FalsePositionView(APIView):
         )
 
         return Response({"ok": True, "data":result}, status=status.HTTP_200_OK)
+    
+
+
+
+class NewtonRaphsonView(APIView):
+    def post(self, request):
+        serializer = NewtonRaphsonSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = serializer.validated_data
+
+        try:
+            result = newton_raphson_method(
+                expr=data["expr"],
+                x_symbol=data["x_symbol"],
+                x0=data["x0"],
+                tol=data["tolerance"],
+                max_iter=data.get("max_iterations"),
+            )
+        except (ValueError, ZeroDivisionError, RuntimeError) as e:
+            # Errores matemáticos controlados → 400
+            return Response(
+                {"ok": False, "errors": {"math": str(e)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"ok": True, "data": result}, status=status.HTTP_200_OK)
