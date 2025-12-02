@@ -80,4 +80,9 @@ export async function newtonRaphsonMethod(payload: { function_latex: string; x0:
   return res.data
 }
 
+export async function secantMethod(payload: { function_latex: string; x0: number; x1: number; tolerance: number; max_iterations?: number; angle_mode?: string }) {
+  const res = await client.post('api/v1/numeric/secant', payload)
+  return res.data
+}
+
 export default client

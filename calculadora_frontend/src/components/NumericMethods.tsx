@@ -8,6 +8,7 @@ import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
 import PropagationErrorInputs from './inputs/PropagationErrorInputs';
 import BisectionInputs from './inputs/BisectionInputs';
 import FalsePositionInputs from './inputs/FalsePositionInputs';
+import SecantInputs from './inputs/SecantInputs';
 import NewtonRaphsonInputs from './inputs/NewtonRaphsonInputs';
 import { OperationSelector } from './OperationSelector';
 
@@ -26,9 +27,11 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
   const closedOperations = [
     { id: 'biseccion', label: 'Método de Bisección', icon: CalcIcon, description: 'Búsqueda de raíz por bisección' },
     { id: 'false_position', label: 'Método de Falsa Posición', icon: CalcIcon, description: 'Búsqueda de raíz por falsa posición' },
+    
   ];
   const openOperations = [
     { id: 'newton_raphson', label: 'Newton-Raphson', icon: CalcIcon, description: 'Método de Newton-Raphson' },
+    { id: 'secante', label: 'Método de Secante', icon: CalcIcon, description: 'Método de la secante' },
   ];
   const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
@@ -113,6 +116,11 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
                 {selectedOp === 'false_position' && (
                   <React.Suspense fallback={<div>Cargando...</div>}>
                     <FalsePositionInputs />
+                  </React.Suspense>
+                )}
+                {selectedOp === 'secante' && (
+                  <React.Suspense fallback={<div>Cargando...</div>}>
+                    <SecantInputs />
                   </React.Suspense>
                 )}
                 {selectedOp === 'newton_raphson' && (
