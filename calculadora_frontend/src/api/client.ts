@@ -75,4 +75,9 @@ export async function falsePositionMethod(payload: { function_latex: string; xi:
   return res.data
 }
 
+export async function newtonRaphsonMethod(payload: { function_latex: string; x0: number; tolerance: number; max_iterations?: number; derivate_mode?: string }) {
+  const res = await client.post('api/v1/numeric/newton-raphson', payload)
+  return res.data
+}
+
 export default client

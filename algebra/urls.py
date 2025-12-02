@@ -11,6 +11,7 @@ from .views import (
     BisectionView,
     FalsePositionView,
     NewtonRaphsonView,
+    SecantView,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path("numeric/bisection-method", BisectionView.as_view(), name="bisection-method"),
     path("numeric/false-position", FalsePositionView.as_view(), name="false-position"),
     path("numeric/newton-raphson", NewtonRaphsonView.as_view(), name="newton-raphson"),
+    path("numeric/secant", SecantView.as_view(), name="secant"),
 ]

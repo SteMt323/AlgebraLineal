@@ -8,6 +8,7 @@ import { ErrorAbsRelInputs } from './inputs/ErrorAbsRelInputs';
 import PropagationErrorInputs from './inputs/PropagationErrorInputs';
 import BisectionInputs from './inputs/BisectionInputs';
 import FalsePositionInputs from './inputs/FalsePositionInputs';
+import NewtonRaphsonInputs from './inputs/NewtonRaphsonInputs';
 import { OperationSelector } from './OperationSelector';
 
 interface NumericMethodsProps {
@@ -25,6 +26,9 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
   const closedOperations = [
     { id: 'biseccion', label: 'Método de Bisección', icon: CalcIcon, description: 'Búsqueda de raíz por bisección' },
     { id: 'false_position', label: 'Método de Falsa Posición', icon: CalcIcon, description: 'Búsqueda de raíz por falsa posición' },
+  ];
+  const openOperations = [
+    { id: 'newton_raphson', label: 'Newton-Raphson', icon: CalcIcon, description: 'Método de Newton-Raphson' },
   ];
   const [topTab, setTopTab] = React.useState<string>('calculo_errores');
   return (
@@ -57,14 +61,17 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
 
               <div className="mb-4">
                 <Tabs value={topTab} onValueChange={(v) => setTopTab(v)} className="w-full">
-                  <TabsList className="grid w-full mx-auto grid-cols-2 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
-                    <TabsTrigger value="calculo_errores" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
-                      Cálculo de errores
-                    </TabsTrigger>
-                    <TabsTrigger value="metodos_cerrados" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
-                      Métodos Cerrados
-                    </TabsTrigger>
-                  </TabsList>
+                  <TabsList className="grid w-full mx-auto grid-cols-3 backdrop-blur-xl bg-white/5 border border-white/10 h-12 text-white">
+                      <TabsTrigger value="calculo_errores" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
+                        Cálculo de errores
+                      </TabsTrigger>
+                      <TabsTrigger value="metodos_cerrados" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
+                        Métodos Cerrados
+                      </TabsTrigger>
+                      <TabsTrigger value="metodos_abiertos" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base">
+                        Métodos Abiertos
+                      </TabsTrigger>
+                    </TabsList>
                 </Tabs>
               </div>
 
@@ -75,6 +82,9 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
 
                 {topTab === 'metodos_cerrados' && (
                   <OperationSelector operations={closedOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
+                )}
+                {topTab === 'metodos_abiertos' && (
+                  <OperationSelector operations={openOperations} selectedOperation={selectedOp} onSelectOperation={(id) => setSelectedOp(id)} />
                 )}
               </div>
 
@@ -103,6 +113,11 @@ export function NumericMethods({ onBack }: NumericMethodsProps) {
                 {selectedOp === 'false_position' && (
                   <React.Suspense fallback={<div>Cargando...</div>}>
                     <FalsePositionInputs />
+                  </React.Suspense>
+                )}
+                {selectedOp === 'newton_raphson' && (
+                  <React.Suspense fallback={<div>Cargando...</div>}>
+                    <NewtonRaphsonInputs />
                   </React.Suspense>
                 )}
               </div>

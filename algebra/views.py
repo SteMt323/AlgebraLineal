@@ -17,6 +17,7 @@ from .serializers import (
     BisectionSerializer,
     FalsePositionSerializer,
     NewtonRaphsonSerializer,
+    SecantSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 
@@ -43,6 +44,7 @@ from .algorithms.numericMethods.closeMethods.false_position import false_positio
 
 # OPEN METHODS
 from .algorithms.numericMethods.openMethods.newton_raphson import newton_raphson_method
+from .algorithms.numericMethods.openMethods.secant import secant_method
 
 logger = logging.getLogger("algebra")
 
@@ -287,6 +289,35 @@ class NewtonRaphsonView(APIView):
             )
         except (ValueError, ZeroDivisionError, RuntimeError) as e:
             # Errores matemáticos controlados → 400
+            return Response(
+                {"ok": False, "errors": {"math": str(e)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"ok": True, "data": result}, status=status.HTTP_200_OK)
+
+
+class SecantView(APIView):
+    def post(self, request):
+        serializer = SecantSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = serializer.validated_data
+
+        try:
+            result = secant_method(
+                expr=data["expr"],
+                x_symbol=data["x_symbol"],
+                x0=data["x0"],
+                x1=data["x1"],
+                tol=data["tolerance"],
+                max_iter=data.get("max_iterations"),
+            )
+        except (ValueError, ZeroDivisionError, RuntimeError) as e:
             return Response(
                 {"ok": False, "errors": {"math": str(e)}},
                 status=status.HTTP_400_BAD_REQUEST,

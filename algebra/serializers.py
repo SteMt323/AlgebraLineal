@@ -462,3 +462,88 @@ class NewtonRaphsonSerializer(serializers.Serializer):
         data["x_symbol"] = x_symbol
 
         return data
+    
+
+class SecantSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+    x0 = serializers.FloatField()
+    x1 = serializers.FloatField()
+    tolerance = serializers.FloatField()
+    max_iterations = serializers.IntegerField(required=False, min_value=1)
+
+    def validate(self, data):
+        tol = data["tolerance"]
+        if tol <= 0:
+            raise serializers.ValidationError(
+                {"tolerance": "La tolerancia debe ser un número positivo."}
+            )
+
+        x0 = data["x0"]
+        x1 = data["x1"]
+        if x0 == x1:
+            raise serializers.ValidationError(
+                {"x0": "Se requiere que x0 y x1 sean diferentes para la secante."}
+            )
+
+        # Parseo LaTeX → SymPy (parser global)
+        try:
+            expr, free_syms = latex_to_sympy_expr(data["function_latex"])
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex": str(e)})
+
+        if not free_syms:
+            raise serializers.ValidationError(
+                {"function_latex": "La función debe depender de la variable x."}
+            )
+        if len(free_syms) > 1:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "Para el método de la secante solo se permite "
+                        "una variable (x)."
+                    )
+                }
+            )
+
+        x_symbol = next(iter(free_syms))
+        if str(x_symbol) != "x":
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La variable de la función debe llamarse x "
+                        "(por ejemplo f(x) = x^2 - 3x + 1)."
+                    )
+                }
+            )
+
+        # Comprobar que f(x0) y f(x1) sean evaluables y que la pendiente inicial no sea 0
+        f = lambdify(x_symbol, expr, "math")
+        try:
+            fx0 = float(f(x0))
+            fx1 = float(f(x1))
+        except Exception:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "No se pudo evaluar f(x) en x0 o x1. "
+                        "Revisa que la expresión sea válida numéricamente "
+                        "para los valores iniciales."
+                    )
+                }
+            )
+
+        if fx1 - fx0 == 0:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La pendiente secante inicial es cero (f(x1) - f(x0) = 0). "
+                        "No se puede aplicar el método de la secante con estos valores."
+                    )
+                }
+            )
+
+        # Guardar para la vista / algoritmo
+        data["expr"] = expr
+        data["x_symbol"] = x_symbol
+
+        return data

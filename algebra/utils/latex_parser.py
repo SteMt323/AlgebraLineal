@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Iterable, Tuple, Set
 from sympy.parsing.latex import parse_latex
-from sympy import Symbol
+from sympy import Symbol, E
 
 
 class LatexParsingError(Exception):
@@ -11,47 +11,39 @@ class LatexParsingError(Exception):
 
 
 def _clean_latex_string(latex: str) -> str:
-    """Normalizar cosas típicas de MathQuill antes de parsear."""
-    if latex is None:
-        raise LatexParsingError("No se recibió ninguna expresión en LaTeX.")
+    s = latex.strip()
 
-    s = str(latex).strip()
-    if not s:
-        raise LatexParsingError("La expresión en LaTeX está vacía.")
+    # Quitar $...$ si llegan así
+    if s.startswith("$") and s.endswith("$"):
+        s = s[1:-1].strip()
 
-    # Quitar delimitadores tipo $...$, \(...\), \[...\]
-    s = re.sub(r"^\$+|\$+$", "", s)
-    s = re.sub(r"^\\\(|\\\)$", "", s)
-    s = re.sub(r"^\\\[|\\\]$", "", s)
-
-    # Eliminar \left y \right pero respetar |...|
+    # Quitar \left \right por comodidad
     s = s.replace(r"\left", "").replace(r"\right", "")
 
-    # No aceptar porcentaje aquí
-    if r"\%" in s:
-        raise LatexParsingError(
-            "El símbolo de porcentaje (\\%) no está permitido en esta expresión."
-        )
+    # (aquí puedes tener otros sanitizados que ya usabas)
 
     return s
 
 
-def latex_to_sympy_expr(latex: str) -> Tuple["sympy.Expr", Set[Symbol]]:
-    """
-    Parser LaTeX GLOBAL.
-    - Devuelve: (expresión_sympy, conjunto_variables_libres)
-    - Lanza LatexParsingError con mensajes amigables en caso de fallo.
-    """
-    cleaned = _clean_latex_string(latex)
+def latex_to_sympy_expr(latex: str):
+    s = _clean_latex_string(latex)
 
     try:
-        expr = parse_latex(cleaned)
+        expr = parse_latex(s)
     except Exception as e:
         raise LatexParsingError(
-            f"No se pudo interpretar la expresión LaTeX: {str(e)}"
-        )
+            f"Error al interpretar la expresión LaTeX: {e}"
+        ) from e
 
-    free_syms: Set[Symbol] = set(expr.free_symbols)
+    # --- AQUÍ VIENE LA MAGIA: tratar 'e' como constante de Euler ---
+
+    # Si existe un símbolo 'e' en la expresión, lo reemplazamos por E
+    e_sym = Symbol("e")
+    if e_sym in expr.free_symbols:
+        expr = expr.subs(e_sym, E)
+
+    # Volvemos a calcular símbolos libres (ahora sin 'e')
+    free_syms = set(expr.free_symbols)
 
     return expr, free_syms
 
