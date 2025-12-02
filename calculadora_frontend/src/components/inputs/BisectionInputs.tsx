@@ -89,14 +89,14 @@ export function BisectionInputs() {
                     <thead>
                       <tr className="text-left text-xs text-gray-300">
                         <th className="p-2">iter</th>
-                        <th className="p-2">xl</th>
-                        <th className="p-2">xu</th>
-                        <th className="p-2">xr</th>
-                        <th className="p-2">Ea</th>
-                        <th className="p-2">yl</th>
-                        <th className="p-2">yu</th>
-                        <th className="p-2">yr</th>
-                        <th className="p-2">interval</th>
+                        <th className="p-2">x<sub>l</sub></th>
+                        <th className="p-2">x<sub>u</sub></th>
+                        <th className="p-2">x<sub>r</sub></th>
+                        <th className="p-2">E<sub>a</sub></th>
+                        <th className="p-2">y<sub>l</sub></th>
+                        <th className="p-2">y<sub>u</sub></th>
+                        <th className="p-2">y<sub>r</sub></th>
+                        <th className="p-2">x<sub>u</sub>-x<sub>i</sub>&lt;E</th>
                       </tr>
                     </thead>
                     <tbody>

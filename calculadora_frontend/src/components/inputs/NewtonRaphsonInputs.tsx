@@ -90,12 +90,12 @@ export function NewtonRaphsonInputs() {
                     <thead>
                       <tr className="text-left text-xs text-gray-300">
                         <th className="p-2">iter</th>
-                        <th className="p-2">xk</th>
-                        <th className="p-2">f(xk)</th>
-                        <th className="p-2">f'(xk)</th>
-                        <th className="p-2">x_next</th>
-                        <th className="p-2">Ea</th>
-                        <th className="p-2">Ea&lt;E</th>
+                        <th className="p-2">x<sub>i</sub></th>
+                        <th className="p-2">f(x<sub>i</sub>)</th>
+                        <th className="p-2">f'(x<sub>i</sub>)</th>
+                        <th className="p-2">x<sub>i+1</sub></th>
+                        <th className="p-2">E<sub>a</sub></th>
+                        <th className="p-2">E<sub>a</sub>&lt;E</th> 
                       </tr>
                     </thead>
                     <tbody>
