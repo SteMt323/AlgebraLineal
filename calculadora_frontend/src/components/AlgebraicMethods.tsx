@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, color } from 'framer-motion';
-import { ArrowLeft, Plus, Minus, X as Multiply, RotateCw, Calculator as CalcIcon, Grid3x3Icon, Triangle } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, X as Multiply, RotateCw, Calculator as CalcIcon, Grid3x3Icon, Triangle, LineChart } from 'lucide-react';
+import { GraphCalculator } from './GraphCalculator';
 import { Button } from './ui/button';
 import { DigitalKeyboard } from './DigitalKeyboard';
 import { OperationSelector } from './OperationSelector';
@@ -49,7 +50,7 @@ interface CalculatorProps {
 export type MatrixValue = (string | number)[][];
 export type VectorValue = (string | number)[];
 
-type InputMode = 'matrix' | 'vector' | 'reduce' | 'determinant';
+type InputMode = 'general' | 'matrix' | 'vector' | 'reduce' | 'determinant';
 
 export function AlgebraicMethods({ onBack }: CalculatorProps) {
   const [inputMode, setInputMode] = useState<InputMode>('matrix');
@@ -613,7 +614,12 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
     { id: 'cramer', label: 'Cramer', icon: CalcIcon, description: 'Cálculo por regla de Cramer (sólo para sistemas cuadrados)', single: true },
   ];
 
+  const generalOperations = [
+    { id: 'graficadora', label: 'Graficadora', icon: LineChart, description: 'Graficadora de funciones', single: true },
+  ];
+
   const getOperationsForMode = (mode: InputMode) => {
+    if (mode === 'general') return generalOperations;
     if (mode === 'matrix') return matrixOperations;
     if (mode === 'vector') return vectorOperations;
     if (mode === 'reduce') return reduceOperations;
@@ -641,6 +647,21 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
 
   // Render the appropriate inputs inside AnimatePresence to avoid complex nested ternaries in JSX
   const renderInputs = () => {
+    if (inputMode === 'general') {
+      return (
+        <motion.div
+          key="general-inputs"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid grid-cols-1 gap-6"
+        >
+          <div>
+            <GraphCalculator />
+          </div>
+        </motion.div>
+      );
+    }
     if (inputMode === 'matrix') {
       return (
         <motion.div
@@ -1011,7 +1032,15 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
             className="w-full"
           > 
 
-            <TabsList className="grid w-full mx-auto grid-cols-4 backdrop-blur-xl bg-white/5 border border-white/10 h-14 text-white">
+            <TabsList className="grid w-full mx-auto grid-cols-5 backdrop-blur-xl bg-white/5 border border-white/10 h-14 text-white">
+              <TabsTrigger 
+                value="general" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base"
+              >
+                <LineChart className="w-5 h-5 mr-2" />
+                Calculadora General
+              </TabsTrigger>
+
               <TabsTrigger 
                 value="matrix" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 text-base"
@@ -1062,44 +1091,48 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
 
             {/* scalar-multiplication UI is handled inside the animated inputs branch above */}
 
-            {/* Result Preview */}
-            <motion.div
-              className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <Button
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  onClick={handleCalculate}
-                >
-                  {loading ? 'Calculando...' : 'Calcular'}
-                </Button>
-              </div>
-              <div className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-6 min-h-32 flex items-center justify-center">
-                <div className="w-full">
-                  {submitError && <p className="text-red-400 mb-2">{submitError}</p>}
-                  <p className="text-purple-300/50 text-center mb-3">
-                    {selectedOperation ? `Operación seleccionada: ${selectedOperation.description}` : 'Selecciona una operación y presiona calcular'}
-                  </p>
-
-                  <ResultSection lastResult={lastResult} />
+            {/* Result Preview - hide for general (Graph) mode */}
+            {inputMode !== 'general' && (
+              <motion.div
+                className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <Button
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    onClick={handleCalculate}
+                  >
+                    {loading ? 'Calculando...' : 'Calcular'}
+                  </Button>
                 </div>
-              </div>
-            </motion.div>
+                <div className="backdrop-blur-lg bg-white/5 border border-white/10 rounded-xl p-6 min-h-32 flex items-center justify-center">
+                  <div className="w-full">
+                    {submitError && <p className="text-red-400 mb-2">{submitError}</p>}
+                    <p className="text-purple-300/50 text-center mb-3">
+                      {selectedOperation ? `Operación seleccionada: ${selectedOperation.description}` : 'Selecciona una operación y presiona calcular'}
+                    </p>
+
+                    <ResultSection lastResult={lastResult} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* end Left Column */}
           </div>
 
-          {/* Right Column - Keyboard */}
-          <div className="lg:col-span-1">
-              <DigitalKeyboard
-                onKeyPress={handleKeyPress}
-                // scalar has highest priority for keyboard input
-                selectedCell={selectedScalar ? { scalar: true } : (selectedVectorCell ?? selectedMatrixCell)}
-              />
-          </div>
+          {/* Right Column - Keyboard (hidden in general/Graph mode) */}
+          {inputMode !== 'general' && (
+            <div className="lg:col-span-1">
+                <DigitalKeyboard
+                  onKeyPress={handleKeyPress}
+                  // scalar has highest priority for keyboard input
+                  selectedCell={selectedScalar ? { scalar: true } : (selectedVectorCell ?? selectedMatrixCell)}
+                />
+            </div>
+          )}
         </div>
       </div>
     </div>

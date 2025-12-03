@@ -3,6 +3,7 @@ import { Calculator, Grid3x3, Triangle, ArrowRight, Brain, Shield, TrendingUp } 
 import { Button } from './ui/button';
 import { useRef } from 'react';
 
+
 interface LandingPageProps {
   onStart: () => void;
   onOpenNumeric?: () => void;
@@ -284,8 +285,6 @@ export function LandingPage({ onStart, onOpenNumeric }: LandingPageProps) {
             </div>
           </div>
         </motion.div>
-
-
 
         {/* Footer */}
         <motion.footer
