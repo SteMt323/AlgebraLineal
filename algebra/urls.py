@@ -12,6 +12,8 @@ from .views import (
     FalsePositionView,
     NewtonRaphsonView,
     SecantView,
+    DerivativeView,
+    IntegralView,
 )
 
 urlpatterns = [
@@ -27,4 +29,6 @@ urlpatterns = [
     path("numeric/false-position", FalsePositionView.as_view(), name="false-position"),
     path("numeric/newton-raphson", NewtonRaphsonView.as_view(), name="newton-raphson"),
     path("numeric/secant", SecantView.as_view(), name="secant"),
+    path("calculus/derivate", DerivativeView.as_view(), name="derivate"),
+    path("calculus/integral", IntegralView.as_view(), name="integral"),
 ]

@@ -547,3 +547,85 @@ class SecantSerializer(serializers.Serializer):
         data["x_symbol"] = x_symbol
 
         return data
+    
+
+# DERIVADAS E INTEGRALES
+class DerivativeSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+
+    def validate(self, data):
+        raw = data["function_latex"]
+
+        try:
+            expr, free_syms = latex_to_sympy_expr(raw)
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex": str(e)})
+
+        # Debe haber exactamente UNA variable
+        if len(free_syms) == 0:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La expresión debe contener exactamente una variable. "
+                        "Actualmente no se detecta ninguna variable."
+                    )
+                }
+            )
+
+        if len(free_syms) > 1:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La expresión debe usar solo un tipo de variable. "
+                        "Se detectaron: "
+                        + ", ".join(str(s) for s in free_syms)
+                    )
+                }
+            )
+
+        var_symbol = next(iter(free_syms))
+
+        data["expr"] = expr
+        data["var_symbol"] = var_symbol
+
+        return data
+    
+class IntegralSerializer(serializers.Serializer):
+    function_latex = serializers.CharField()
+
+    def validate(self, data):
+        raw = data["function_latex"]
+
+        try:
+            expr, free_syms = latex_to_sympy_expr(raw)
+        except LatexParsingError as e:
+            raise serializers.ValidationError({"function_latex": str(e)})
+
+        # Debe haber exactamente UNA variable
+        if len(free_syms) == 0:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La expresión debe contener exactamente una variable. "
+                        "Actualmente no se detecta ninguna variable."
+                    )
+                }
+            )
+
+        if len(free_syms) > 1:
+            raise serializers.ValidationError(
+                {
+                    "function_latex": (
+                        "La expresión debe usar solo un tipo de variable. "
+                        "Se detectaron: "
+                        + ", ".join(str(s) for s in free_syms)
+                    )
+                }
+            )
+
+        var_symbol = next(iter(free_syms))
+
+        data["expr"] = expr
+        data["var_symbol"] = var_symbol
+
+        return data

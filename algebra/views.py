@@ -18,6 +18,8 @@ from .serializers import (
     FalsePositionSerializer,
     NewtonRaphsonSerializer,
     SecantSerializer,
+    IntegralSerializer,
+    DerivativeSerializer,
 )
 from .serializers import MatrixDeterminantSerializer
 
@@ -45,6 +47,10 @@ from .algorithms.numericMethods.closeMethods.false_position import false_positio
 # OPEN METHODS
 from .algorithms.numericMethods.openMethods.newton_raphson import newton_raphson_method
 from .algorithms.numericMethods.openMethods.secant import secant_method
+
+# INTEGRAL AND DERIVATE
+from .algorithms.otherOperations.derivate import compute_derivative
+from .algorithms.otherOperations.integral import compute_integral
 
 logger = logging.getLogger("algebra")
 
@@ -324,3 +330,81 @@ class SecantView(APIView):
             )
 
         return Response({"ok": True, "data": result}, status=status.HTTP_200_OK)
+    
+
+class DerivativeView(APIView):
+    def post(self, request):
+        serializer = DerivativeSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = serializer.validated_data
+
+        try:
+            result = compute_derivative(
+                expr=data["expr"],
+                var_symbol=data["var_symbol"],
+            )
+        except Exception as e:
+            return Response(
+                {"ok": False, "errors": {"math": str(e)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "ok": True,
+                "data": {
+                    "input": {
+                        "latex": data["function_latex"],
+                        "variable": result["variable"],
+                    },
+                    "result": {
+                        "latex": result["result_latex"],
+                    },
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class IntegralView(APIView):
+    def post(self, request):
+        serializer = IntegralSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"ok": False, "errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = serializer.validated_data
+
+        try:
+            result = compute_integral(
+                expr=data["expr"],
+                var_symbol=data["var_symbol"],
+            )
+        except Exception as e:
+            return Response(
+                {"ok": False, "errors": {"math": str(e)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "ok": True,
+                "data": {
+                    "input": {
+                        "latex": data["function_latex"],
+                        "variable": result["variable"],
+                    },
+                    "result": {
+                        "latex": result["result_latex"],
+                    },
+                },
+            },
+            status=status.HTTP_200_OK,
+        )

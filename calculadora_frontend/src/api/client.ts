@@ -85,4 +85,17 @@ export async function secantMethod(payload: { function_latex: string; x0: number
   return res.data
 }
 
+export async function derivativeMethod(payload: { latex: string; variable?: string }) {
+  const body: any = { function_latex: payload.latex };
+  // variable is optional; backend infers variable from latex
+  const res = await client.post('api/v1/calculus/derivate', body);
+  return res.data;
+}
+
+export async function integralMethod(payload: { latex: string; variable?: string }) {
+  const body: any = { function_latex: payload.latex };
+  const res = await client.post('api/v1/calculus/integral', body);
+  return res.data;
+}
+
 export default client

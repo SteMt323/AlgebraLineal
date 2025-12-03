@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, color } from 'framer-motion';
 import { ArrowLeft, Plus, Minus, X as Multiply, RotateCw, Calculator as CalcIcon, Grid3x3Icon, Triangle, LineChart } from 'lucide-react';
 import { GraphCalculator } from './GraphCalculator';
+import DerivativeInputs from './general/DerivativeInputs';
+import IntegralInputs from './general/IntegralInputs';
 import { Button } from './ui/button';
 import { DigitalKeyboard } from './DigitalKeyboard';
 import { OperationSelector } from './OperationSelector';
@@ -53,7 +55,7 @@ export type VectorValue = (string | number)[];
 type InputMode = 'general' | 'matrix' | 'vector' | 'reduce' | 'determinant';
 
 export function AlgebraicMethods({ onBack }: CalculatorProps) {
-  const [inputMode, setInputMode] = useState<InputMode>('matrix');
+  const [inputMode, setInputMode] = useState<InputMode>('general');
   
   // Matrix state
   const [matrixA, setMatrixA] = useState<MatrixValue>([[0, 0], [0, 0]]);
@@ -616,6 +618,8 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
 
   const generalOperations = [
     { id: 'graficadora', label: 'Graficadora', icon: LineChart, description: 'Graficadora de funciones', single: true },
+    { id: 'derivadas', label: 'Derivadas', icon: Triangle, description: 'Cálculo de derivadas', single: true },
+    { id: 'integrales', label: 'Integrales', icon: Triangle, description: 'Cálculo de integrales', single: true },
   ];
 
   const getOperationsForMode = (mode: InputMode) => {
@@ -648,20 +652,22 @@ export function AlgebraicMethods({ onBack }: CalculatorProps) {
   // Render the appropriate inputs inside AnimatePresence to avoid complex nested ternaries in JSX
   const renderInputs = () => {
     if (inputMode === 'general') {
-      return (
-        <motion.div
-          key="general-inputs"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          className="grid grid-cols-1 gap-6"
-        >
-          <div>
-            <GraphCalculator />
-          </div>
-        </motion.div>
-      );
-    }
+        return (
+          <motion.div
+            key="general-inputs"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="grid grid-cols-1 gap-6"
+          >
+            <div>
+              {operation === 'graficadora' && <GraphCalculator />}
+              {operation === 'derivadas' && <DerivativeInputs />}
+              {operation === 'integrales' && <IntegralInputs />}
+            </div>
+          </motion.div>
+        );
+      }
     if (inputMode === 'matrix') {
       return (
         <motion.div
